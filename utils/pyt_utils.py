@@ -170,12 +170,17 @@ def load_model(model, model_file, is_restore=False):
         state_dict = model_file
     t_ioend = time.time()
 
-    if is_restore:
-        new_state_dict = OrderedDict()
-        for k, v in state_dict.items():
-            name = 'module.' + k
-            new_state_dict[name] = v
-        state_dict = new_state_dict
+    # if is_restore:
+    #     new_state_dict = OrderedDict()
+    #     for k, v in state_dict.items():
+    #         name = 'module.' + k
+    #         new_state_dict[name] = v
+    #     state_dict = new_state_dict
+    # new_state_dict = OrderedDict()
+    # for k, v in state_dict.items():
+    #     name = k.replace('module.', '')
+    #     new_state_dict[name] = v
+    # state_dict = new_state_dict
 
     model.load_state_dict(state_dict, strict=True)
     ckpt_keys = set(state_dict.keys())

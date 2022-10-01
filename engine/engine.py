@@ -45,8 +45,8 @@ class Engine(object):
 
         self.continue_state_object = self.args.continue_fpath
 
-        if 'WORLD_SIZE' in os.environ:
-            self.distributed = int(os.environ['WORLD_SIZE']) > 1
+        # if 'WORLD_SIZE' in os.environ:
+        #     self.distributed = int(os.environ['WORLD_SIZE']) > 1
         
         if self.distributed:
             self.local_rank = self.args.local_rank
@@ -128,15 +128,16 @@ class Engine(object):
 
     def restore_checkpoint(self):
         t_start = time.time()
-        if self.distributed:
-            # load the model on cpu first to avoid GPU RAM surge
-            # when loading a model checkpoint
-            # tmp = torch.load(self.continue_state_object,
-            #                  map_location=lambda storage, loc: storage.cuda(
-            #                      self.local_rank))
-            tmp = torch.load(self.continue_state_object, map_location=torch.device('cpu'))
-        else:
-            tmp = torch.load(self.continue_state_object)
+        # if self.distributed:
+        #     # load the model on cpu first to avoid GPU RAM surge
+        #     # when loading a model checkpoint
+        #     # tmp = torch.load(self.continue_state_object,
+        #     #                  map_location=lambda storage, loc: storage.cuda(
+        #     #                      self.local_rank))
+        #     tmp = torch.load(self.continue_state_object, map_location=torch.device('cpu'))
+        # else:
+        #     tmp = torch.load(self.continue_state_object)
+        tmp = torch.load(self.continue_state_object, map_location=torch.device('cpu'))
         t_ioend = time.time()
         self.state.model = load_model(self.state.model, tmp['model'], is_restore=True)
         self.state.optimizer.load_state_dict(tmp['optimizer'])

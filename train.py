@@ -117,6 +117,8 @@ with Engine(custom_parser=parser) as engine:
             imgs = imgs.cuda(non_blocking=True)
             gts = gts.cuda(non_blocking=True)
             modal_xs = modal_xs.cuda(non_blocking=True)
+            # print (gts)
+            # exit()
 
             aux_rate = 0.2
             loss = model(imgs, modal_xs, gts)

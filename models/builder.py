@@ -118,6 +118,10 @@ class EncoderDecoder(nn.Module):
         else:
             out = self.encode_decode(rgb, modal_x)
         if label is not None:
+            # print (out.shape)
+            # torch.set_printoptions(profile="full")
+            # print (label)
+            # exit()
             loss = self.criterion(out, label.long())
             if self.aux_head:
                 loss += self.aux_rate * self.criterion(aux_fm, label.long())

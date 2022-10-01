@@ -14,24 +14,27 @@ C.seed = 12345
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
+C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
 C.abs_dir = osp.realpath(".")
 
 # Dataset config
 """Dataset Path"""
 C.dataset_name = 'NYUDepthv2'
-C.dataset_path = osp.join(C.root_dir, 'datasets', 'NYUDepthv2')
-C.rgb_root_folder = osp.join(C.dataset_path, 'RGB')
-C.rgb_format = '.jpg'
-C.gt_root_folder = osp.join(C.dataset_path, 'Label')
+C.dataset_path = C.data_dir
+C.rgb_root_folder = osp.join(C.dataset_path, 'image')
+C.rgb_format = '.png'
+C.gt_root_folder = osp.join(C.dataset_path, 'seg40')
 C.gt_format = '.png'
-C.gt_transform = True
+C.gt_transform = False
 # True when label 0 is invalid, you can also modify the function _transform_gt in dataloader.RGBXDataset
 # True for most dataset valid, Faslse for MFNet(?)
-C.x_root_folder = osp.join(C.dataset_path, 'HHA')
-C.x_format = '.jpg'
+C.x_root_folder = osp.join(C.dataset_path, 'hha')
+C.x_format = '_hha.png'
 C.x_is_single_channel = False # True for raw depth, thermal and aolp/dolp(not aolp/dolp tri) input
-C.train_source = osp.join(C.dataset_path, "train.txt")
-C.eval_source = osp.join(C.dataset_path, "test.txt")
+# C.train_source = osp.join(C.dataset_path, "train.txt")
+C.train_source = "train"
+# C.eval_source = osp.join(C.dataset_path, "test.txt")
+C.eval_source = "test"
 C.is_test = False
 C.num_train_imgs = 795
 C.num_eval_imgs = 654
@@ -60,7 +63,7 @@ C.lr = 6e-5
 C.lr_power = 0.9
 C.momentum = 0.9
 C.weight_decay = 0.01
-C.batch_size = 8
+C.batch_size = 2
 C.nepochs = 500
 C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
 C.num_workers = 16
@@ -72,15 +75,15 @@ C.bn_eps = 1e-3
 C.bn_momentum = 0.1
 
 """Eval Config"""
-C.eval_iter = 25
+C.eval_iter = 5
 C.eval_stride_rate = 2 / 3
 C.eval_scale_array = [1] # [0.75, 1, 1.25] # 
 C.eval_flip = False # True # 
 C.eval_crop_size = [480, 640] # [height weight]
 
 """Store Config"""
-C.checkpoint_start_epoch = 250
-C.checkpoint_step = 25
+C.checkpoint_start_epoch = 5
+C.checkpoint_step = 5 
 
 """Path Config"""
 def add_path(path):

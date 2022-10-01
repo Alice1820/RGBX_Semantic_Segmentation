@@ -36,10 +36,11 @@ class RGBXDataset(data.Dataset):
             item_name = self._construct_new_file_names(self._file_length)[index]
         else:
             item_name = self._file_names[index]
-        rgb_path = os.path.join(self._rgb_path, item_name + self._rgb_format)
-        x_path = os.path.join(self._x_path, item_name + self._x_format)
-        gt_path = os.path.join(self._gt_path, item_name + self._gt_format)
-
+        # print (item_name)
+        rgb_path = os.path.join(self._rgb_path, self.source, item_name + self._rgb_format)
+        x_path = os.path.join(self._x_path, self.source, item_name + self._x_format)
+        gt_path = os.path.join(self._gt_path, self.source, item_name + self._gt_format)
+        # print (gt_path)
         # Check the following settings if necessary
         rgb = self._open_image(rgb_path, cv2.COLOR_BGR2RGB)
 
@@ -67,17 +68,17 @@ class RGBXDataset(data.Dataset):
 
     def _get_file_names(self, split_name):
         assert split_name in ['train', 'val']
-        source = self._train_source
+        self.source = self._train_source
         if split_name == "val":
-            source = self._eval_source
+            self.source = self._eval_source
 
-        file_names = []
-        with open(source) as f:
-            files = f.readlines()
+        file_names = [f.split('.')[0] for f in sorted(os.listdir(os.path.join(self._rgb_path, self.source)))]
+        # with open(source) as f:
+        #     files = f.readlines()
 
-        for item in files:
-            file_name = item.strip()
-            file_names.append(file_name)
+        # for item in files:
+        #     file_name = item.strip()
+        #     file_names.append(file_name)
 
         return file_names
 
