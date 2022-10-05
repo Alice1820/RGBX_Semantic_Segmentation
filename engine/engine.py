@@ -73,6 +73,13 @@ class Engine(object):
                        default='16005',
                        dest="port",
                        help='port for init_process_group')
+        '''Evaluation'''
+        p.add_argument('-e', '--epochs', default='last', type=str)
+        # p.add_argument('-d', '--devices', default='0', type=str)
+        p.add_argument('-v', '--verbose', default=False, action='store_true')
+        p.add_argument('--show_image', '-s', default=False,
+                            action='store_true')
+        p.add_argument('--save_path', default='/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2')
 
     def register_state(self, **kwargs):
         self.state.register(**kwargs)

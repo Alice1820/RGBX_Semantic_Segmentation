@@ -20,6 +20,7 @@ C.abs_dir = osp.realpath(".")
 # Dataset config
 """Dataset Path"""
 C.dataset_name = 'NYUDepthv2'
+C.modals = 'RGBD'
 C.dataset_path = C.data_dir
 C.rgb_root_folder = osp.join(C.dataset_path, 'image')
 C.rgb_format = '.png'
@@ -83,7 +84,7 @@ C.eval_crop_size = [480, 640] # [height weight]
 
 """Store Config"""
 C.checkpoint_start_epoch = 5
-C.checkpoint_step = 5 
+C.checkpoint_step = 5
 
 """Path Config"""
 def add_path(path):

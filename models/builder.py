@@ -10,9 +10,9 @@ from engine.logger import get_logger
 
 logger = get_logger()
 
-class EncoderDecoder(nn.Module):
+class RGBXEncoderDecoder(nn.Module):
     def __init__(self, cfg=None, criterion=nn.CrossEntropyLoss(reduction='mean', ignore_index=255), norm_layer=nn.BatchNorm2d):
-        super(EncoderDecoder, self).__init__()
+        super(RGBXEncoderDecoder, self).__init__()
         self.channels = [64, 128, 320, 512]
         self.norm_layer = norm_layer
         # import backbone and decoder

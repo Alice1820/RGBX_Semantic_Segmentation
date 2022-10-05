@@ -39,7 +39,7 @@ class Evaluator(object):
             ensure_dir(save_path)
         self.show_image = show_image
 
-    def run(self, model_path, model_indice, log_file, log_file_link):
+    def run(self, model_path, model_indice, log_file, log_file_link, tb=None, epoch=-1):
         """There are four evaluation modes:
             1.only eval a .pth model: -e *.pth
             2.only eval a certain epoch: -e epoch
@@ -86,9 +86,9 @@ class Evaluator(object):
             logger.info("Load Model: %s" % model)
             self.val_func = load_model(self.network, model)
             if len(self.devices ) == 1:
-                result_line = self.single_process_evalutation()
+                iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.single_process_evalutation()
             else:
-                result_line = self.multi_process_evaluation()
+                iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.multi_process_evaluation()
 
             results.write('Model: ' + model + '\n')
             results.write(result_line)
@@ -96,6 +96,13 @@ class Evaluator(object):
             results.flush()
 
         results.close()
+        
+        if tb is not None:
+            tb.add_scalar('eval/mean_IoU', mean_IoU, epoch)
+            tb.add_scalar('eval/freq_IoU', freq_IoU, epoch)
+            tb.add_scalar('eval/mean_pixel_acc', mean_pixel_acc, epoch)
+            tb.add_scalar('eval/pixel_acc', pixel_acc, epoch)
+
 
 
     def single_process_evalutation(self):
@@ -107,11 +114,11 @@ class Evaluator(object):
             dd = self.dataset[idx]
             results_dict = self.func_per_iteration(dd,self.devices[0])
             all_results.append(results_dict)
-        result_line = self.compute_metric(all_results)
+        iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.compute_metric(all_results)
         logger.info(
             'Evaluation Elapsed Time: %.2fs' % (
                     time.perf_counter() - start_eval_time))
-        return result_line
+        return iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line
 
 
     def multi_process_evaluation(self):

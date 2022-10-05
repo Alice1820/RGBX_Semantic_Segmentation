@@ -3,6 +3,7 @@ import cv2
 import argparse
 import numpy as np
 
+import PIL.Image as Image
 import torch
 import torch.nn as nn
 
@@ -13,7 +14,7 @@ from engine.evaluator import Evaluator
 from engine.logger import get_logger
 from utils.metric import hist_info, compute_score
 from dataloader.RGBXDataset import RGBXDataset
-from models.builder import EncoderDecoder as segmodel
+from models.builder import RGBXEncoderDecoder as dualsegmodel
 from dataloader.dataloader import ValPre
 
 logger = get_logger()
@@ -29,23 +30,38 @@ class SegEvaluator(Evaluator):
         results_dict = {'hist': hist_tmp, 'labeled': labeled_tmp, 'correct': correct_tmp}
 
         if self.save_path is not None:
-            ensure_dir(self.save_path)
-            ensure_dir(self.save_path+'_color')
+            ensure_dir(os.path.join(self.save_path, 'results'))
+            ensure_dir(os.path.join(self.save_path, 'results_color'))
 
             fn = name + '.png'
 
             # save colored result
             result_img = Image.fromarray(pred.astype(np.uint8), mode='P')
-            class_colors = get_class_colors()
+            class_colors = self.dataset.get_class_colors()
             palette_list = list(np.array(class_colors).flat)
             if len(palette_list) < 768:
                 palette_list += [0] * (768 - len(palette_list))
             result_img.putpalette(palette_list)
-            result_img.save(os.path.join(self.save_path+'_color', fn))
+            result_img.save(os.path.join(self.save_path, 'results_color', fn))
 
             # save raw result
-            cv2.imwrite(os.path.join(self.save_path, fn), pred)
-            logger.info('Save the image ' + fn)
+            cv2.imwrite(os.path.join(self.save_path, 'results', fn), pred)
+            # logger.info('Save the image ' + fn)
+
+            '''Ground Truth'''
+            ensure_dir(os.path.join(self.save_path, 'gts'))
+            ensure_dir(os.path.join(self.save_path, 'gts_color'))
+
+            result_img = Image.fromarray(label.astype(np.uint8), mode='P')
+            class_colors = self.dataset.get_class_colors()
+            palette_list = list(np.array(class_colors).flat)
+            if len(palette_list) < 768:
+                palette_list += [0] * (768 - len(palette_list))
+            result_img.putpalette(palette_list)
+            result_img.save(os.path.join(self.save_path, 'gts_color', fn))
+
+            # save raw result
+            cv2.imwrite(os.path.join(self.save_path, 'gts', fn), label)
 
         if self.show_image:
             colors = self.dataset.get_class_colors
@@ -72,8 +88,8 @@ class SegEvaluator(Evaluator):
 
         iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc = compute_score(hist, correct, labeled)
         result_line = print_iou(iou, freq_IoU, mean_pixel_acc, pixel_acc,
-                                dataset.class_names, show_no_back=False)
-        return result_line
+                                self.dataset.class_names, show_no_back=False)
+        return iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -82,12 +98,12 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose', default=False, action='store_true')
     parser.add_argument('--show_image', '-s', default=False,
                         action='store_true')
-    parser.add_argument('--save_path', '-p', default=None)
+    parser.add_argument('--save_path', '-p', default='/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2/results/')
 
     args = parser.parse_args()
     all_dev = parse_devices(args.devices)
 
-    network = segmodel(cfg=config, criterion=None, norm_layer=nn.BatchNorm2d)
+    network = dualsegmodel(cfg=config, criterion=None, norm_layer=nn.BatchNorm2d)
     data_setting = {'rgb_root': config.rgb_root_folder,
                     'rgb_format': config.rgb_format,
                     'gt_root': config.gt_root_folder,
