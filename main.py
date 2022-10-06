@@ -135,7 +135,7 @@ if __name__ == '__main__':
         else:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             model.to(device)
-            model = DataParallel(model)
+            # model = DataParallel(model)
 
         engine.register_state(dataloader=train_loader, model=model,
                             optimizer=optimizer)

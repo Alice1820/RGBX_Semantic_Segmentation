@@ -85,7 +85,7 @@ class Evaluator(object):
 
         for model in models:
             logger.info("Load Model: %s" % model)
-            self.val_func = load_model(self.network, model, is_restore=True)
+            self.val_func = load_model(self.network, model, is_restore=False)
             if len(self.devices ) == 1:
                 iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.single_process_evalutation()
             else:
