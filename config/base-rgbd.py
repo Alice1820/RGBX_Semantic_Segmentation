@@ -12,15 +12,19 @@ cfg = C
 
 C.seed = 12345
 
+C.task = 'base-rgbd'
+
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
+C.data_dir = '/data0/xfzhang/data/NYUv2'
 C.abs_dir = osp.realpath(".")
+
+"""Semi Learn"""
+C.modals = 'RGBD'
 
 # Dataset config
 """Dataset Path"""
 C.dataset_name = 'NYUDepthv2'
-C.modals = 'RGBD'
 C.dataset_path = C.data_dir
 C.rgb_root_folder = osp.join(C.dataset_path, 'image')
 C.rgb_format = '.png'

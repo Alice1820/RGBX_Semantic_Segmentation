@@ -10,23 +10,46 @@ from engine.logger import get_logger
 
 logger = get_logger()
 
-class EncoderDecoder(nn.Module):
+class RGBXEncoderDecoder(nn.Module):
     def __init__(self, cfg=None, criterion=nn.CrossEntropyLoss(reduction='mean', ignore_index=255), norm_layer=nn.BatchNorm2d):
-        super(EncoderDecoder, self).__init__()
+        super(RGBXEncoderDecoder, self).__init__()
         self.channels = [64, 128, 320, 512]
         self.norm_layer = norm_layer
-        if cfg.backbone == 'mit_b2':
+        # import backbone and decoder
+        if cfg.backbone == 'swin_s':
+            logger.info('Using backbone: Swin-Transformer-small')
+            from .encoders.dual_swin import swin_s as backbone
+            self.channels = [96, 192, 384, 768]
+            self.backbone = backbone(norm_fuse=norm_layer)
+        elif cfg.backbone == 'swin_b':
+            logger.info('Using backbone: Swin-Transformer-Base')
+            from .encoders.dual_swin import swin_b as backbone
+            self.channels = [128, 256, 512, 1024]
+            self.backbone = backbone(norm_fuse=norm_layer)
+        elif cfg.backbone == 'mit_b5':
+            logger.info('Using backbone: Segformer-B5')
+            from .encoders.dual_segformer import mit_b5 as backbone
+            self.backbone = backbone(norm_fuse=norm_layer)
+        elif cfg.backbone == 'mit_b4':
+            logger.info('Using backbone: Segformer-B4')
+            from .encoders.dual_segformer import mit_b4 as backbone
+            self.backbone = backbone(norm_fuse=norm_layer)
+        elif cfg.backbone == 'mit_b2':
             logger.info('Using backbone: Segformer-B2')
-            from .encoders.segformer import mit_b2 as backbone
+            from .encoders.dual_segformer import mit_b2 as backbone
+            self.backbone = backbone(norm_fuse=norm_layer)
+        elif cfg.backbone == 'mit_b1':
+            logger.info('Using backbone: Segformer-B1')
+            from .encoders.dual_segformer import mit_b0 as backbone
             self.backbone = backbone(norm_fuse=norm_layer)
         elif cfg.backbone == 'mit_b0':
             logger.info('Using backbone: Segformer-B0')
             self.channels = [32, 64, 160, 256]
-            from .encoders.segformer import mit_b0 as backbone
+            from .encoders.dual_segformer import mit_b0 as backbone
             self.backbone = backbone(norm_fuse=norm_layer)
         else:
             logger.info('Using backbone: Segformer-B2')
-            from .encoders.segformer import mit_b2 as backbone
+            from .encoders.dual_segformer import mit_b2 as backbone
             self.backbone = backbone(norm_fuse=norm_layer)
 
         self.aux_head = None
@@ -76,25 +99,25 @@ class EncoderDecoder(nn.Module):
                 self.norm_layer, cfg.bn_eps, cfg.bn_momentum,
                 mode='fan_in', nonlinearity='relu')
 
-    def encode_decode(self, x):
+    def encode_decode(self, rgb, modal_x):
         """Encode images with backbone and decode into a semantic segmentation
         map of the same size as input."""
-        orisize = x.shape
-        x = self.backbone(x)
+        orisize = rgb.shape
+        x = self.backbone(rgb, modal_x)
         out = self.decode_head.forward(x)
         out = F.interpolate(out, size=orisize[2:], mode='bilinear', align_corners=False)
+        if self.aux_head:
+            aux_fm = self.aux_head(x[self.aux_index])
+            aux_fm = F.interpolate(aux_fm, size=orisize[2:], mode='bilinear', align_corners=False)
+            return out, aux_fm
         return out
 
-    def forward(self, x, label=None):
+    def forward(self, rgb, modal_x, label=None):
         if self.aux_head:
-            out, aux_fm = self.encode_decode(x)
+            out, aux_fm = self.encode_decode(rgb, modal_x)
         else:
-            out = self.encode_decode(x)
+            out = self.encode_decode(rgb, modal_x)
         if label is not None:
-            # print (out.shape)
-            # torch.set_printoptions(profile="full")
-            # print (label)
-            # exit()
             loss = self.criterion(out, label.long())
             if self.aux_head:
                 loss += self.aux_rate * self.criterion(aux_fm, label.long())

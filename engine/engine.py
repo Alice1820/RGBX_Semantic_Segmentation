@@ -27,21 +27,14 @@ class State(object):
             
 
 class Engine(object):
-    def __init__(self, custom_parser=None):
+    def __init__(self, args):
         logger.info(
             "PyTorch Version {}".format(torch.__version__))
         self.state = State()
         self.devices = None
         self.distributed = False
-
-        if custom_parser is None:
-            self.parser = argparse.ArgumentParser()
-        else:
-            assert isinstance(custom_parser, argparse.ArgumentParser)
-            self.parser = custom_parser
-
-        self.inject_default_parser()
-        self.args = self.parser.parse_args()
+        
+        self.args = args
 
         self.continue_state_object = self.args.continue_fpath
 
@@ -57,29 +50,6 @@ class Engine(object):
             self.devices = [i for i in range(self.world_size)]
         else:
             self.devices = parse_devices(self.args.devices)
-
-
-    def inject_default_parser(self):
-        p = self.parser
-        p.add_argument('-d', '--devices', default='',
-                       help='set data parallel training')
-        p.add_argument('-c', '--continue', type=extant_file,
-                       metavar="FILE",
-                       dest="continue_fpath",
-                       help='continue from one certain checkpoint')
-        p.add_argument('--local_rank', default=0, type=int,
-                       help='process rank on node')
-        p.add_argument('-p', '--port', type=str,
-                       default='16005',
-                       dest="port",
-                       help='port for init_process_group')
-        '''Evaluation'''
-        p.add_argument('-e', '--epochs', default='last', type=str)
-        # p.add_argument('-d', '--devices', default='0', type=str)
-        p.add_argument('-v', '--verbose', default=False, action='store_true')
-        p.add_argument('--show_image', '-s', default=False,
-                            action='store_true')
-        p.add_argument('--save_path', default='/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2')
 
     def register_state(self, **kwargs):
         self.state.register(**kwargs)

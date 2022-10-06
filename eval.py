@@ -7,26 +7,33 @@ import PIL.Image as Image
 import torch
 import torch.nn as nn
 
-from config import config
+# from config import config
 from utils.pyt_utils import ensure_dir, link_file, load_model, parse_devices
 from utils.visualize import print_iou, show_img
 from engine.evaluator import Evaluator
 from engine.logger import get_logger
 from utils.metric import hist_info, compute_score
 from dataloader.RGBXDataset import RGBXDataset
-from models.builder import RGBXEncoderDecoder as dualsegmodel
+from models.dual_builder import RGBXEncoderDecoder as dualsegmodel
+from models.builder import EncoderDecoder as segmodel
 from dataloader.dataloader import ValPre
 
 logger = get_logger()
 
-class SegEvaluator(Evaluator):
+class RGBXSegEvaluator(Evaluator):
     def func_per_iteration(self, data, device):
         img = data['data']
         label = data['label']
         modal_x = data['modal_x']
         name = data['fn']
-        pred = self.sliding_eval_rgbX(img, modal_x, config.eval_crop_size, config.eval_stride_rate, device)
-        hist_tmp, labeled_tmp, correct_tmp = hist_info(config.num_classes, pred, label)
+        if self.config.modals == 'RGBD':
+            pred = self.sliding_eval_rgbX(img, modal_x, self.config.eval_crop_size, self.config.eval_stride_rate, device)
+        elif self.config.modals == 'RGB':
+            pred = self.sliding_eval(img, self.config.eval_crop_size, self.config.eval_stride_rate, device)
+        elif self.config.modals == 'Depth':
+            pred = self.sliding_eval(modal_x, self.config.eval_crop_size, self.config.eval_stride_rate, device)
+
+        hist_tmp, labeled_tmp, correct_tmp = hist_info(self.config.num_classes, pred, label)
         results_dict = {'hist': hist_tmp, 'labeled': labeled_tmp, 'correct': correct_tmp}
 
         if self.save_path is not None:
@@ -76,7 +83,7 @@ class SegEvaluator(Evaluator):
         return results_dict
 
     def compute_metric(self, results):
-        hist = np.zeros((config.num_classes, config.num_classes))
+        hist = np.zeros((self.config.num_classes, self.config.num_classes))
         correct = 0
         labeled = 0
         count = 0

@@ -279,20 +279,6 @@ class SegTransformer(nn.Module):
             for i in range(depths[3])])
         self.norm4 = norm_layer(embed_dims[3])
 
-        cur += depths[3]
-
-        self.FRMs = nn.ModuleList([
-                    FRM(dim=embed_dims[0], reduction=1),
-                    FRM(dim=embed_dims[1], reduction=1),
-                    FRM(dim=embed_dims[2], reduction=1),
-                    FRM(dim=embed_dims[3], reduction=1)])
-
-        self.FFMs = nn.ModuleList([
-                    FFM(dim=embed_dims[0], reduction=1, num_heads=num_heads[0], norm_layer=norm_fuse),
-                    FFM(dim=embed_dims[1], reduction=1, num_heads=num_heads[1], norm_layer=norm_fuse),
-                    FFM(dim=embed_dims[2], reduction=1, num_heads=num_heads[2], norm_layer=norm_fuse),
-                    FFM(dim=embed_dims[3], reduction=1, num_heads=num_heads[3], norm_layer=norm_fuse)])
-
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
@@ -312,94 +298,56 @@ class SegTransformer(nn.Module):
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
-            load_dualpath_model(self, pretrained)
+            load_model(self, pretrained)
         else:
             raise TypeError('pretrained must be a str or None')
 
-    def forward_features(self, x_rgb, x_e):
-        """
-        x_rgb: B x N x H x W
-        """
-        B = x_rgb.shape[0]
+    def forward_features(self, x):
+        B = x.shape[0]
         outs = []
-        outs_fused = []
 
         # stage 1
-        x_rgb, H, W = self.patch_embed1(x_rgb)
-        # B H*W/16 C
-        x_e, _, _ = self.extra_patch_embed1(x_e)
+        x, H, W = self.patch_embed1(x)
         for i, blk in enumerate(self.block1):
-            x_rgb = blk(x_rgb, H, W)
-        for i, blk in enumerate(self.extra_block1):
-            x_e = blk(x_e, H, W)
-        x_rgb = self.norm1(x_rgb)
-        x_e = self.extra_norm1(x_e)
-
-        x_rgb = x_rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-        x_e = x_e.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-        x_rgb, x_e = self.FRMs[0](x_rgb, x_e)
-        x_fused = self.FFMs[0](x_rgb, x_e)
-        outs.append(x_fused)
-        
+            x = blk(x, H, W)
+        x = self.norm1(x)
+        x = x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        outs.append(x)
 
         # stage 2
-        x_rgb, H, W = self.patch_embed2(x_rgb)
-        x_e, _, _ = self.extra_patch_embed2(x_e)
+        x, H, W = self.patch_embed2(x)
         for i, blk in enumerate(self.block2):
-            x_rgb = blk(x_rgb, H, W)
-        for i, blk in enumerate(self.extra_block2):
-            x_e = blk(x_e, H, W)
-        x_rgb = self.norm2(x_rgb)
-        x_e = self.extra_norm2(x_e)
-
-        x_rgb = x_rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-        x_e = x_e.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-        x_rgb, x_e = self.FRMs[1](x_rgb, x_e)
-        x_fused = self.FFMs[1](x_rgb, x_e)
-        outs.append(x_fused)
-        
+            x = blk(x, H, W)
+        x = self.norm2(x)
+        x = x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        outs.append(x)
 
         # stage 3
-        x_rgb, H, W = self.patch_embed3(x_rgb)
-        x_e, _, _ = self.extra_patch_embed3(x_e)
+        x, H, W = self.patch_embed3(x)
         for i, blk in enumerate(self.block3):
-            x_rgb = blk(x_rgb, H, W)
-        for i, blk in enumerate(self.extra_block3):
-            x_e = blk(x_e, H, W)
-        x_rgb = self.norm3(x_rgb)
-        x_e = self.extra_norm3(x_e)
-
-        x_rgb = x_rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-        x_e = x_e.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-        x_rgb, x_e = self.FRMs[2](x_rgb, x_e)
-        x_fused = self.FFMs[2](x_rgb, x_e)
-        outs.append(x_fused)
-        
+            x = blk(x, H, W)
+        x = self.norm3(x)
+        x = x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        outs.append(x)
 
         # stage 4
-        x_rgb, H, W = self.patch_embed4(x_rgb)
-        x_e, _, _ = self.extra_patch_embed4(x_e)
+        x, H, W = self.patch_embed4(x)
         for i, blk in enumerate(self.block4):
-            x_rgb = blk(x_rgb, H, W)
-        for i, blk in enumerate(self.extra_block4):
-            x_e = blk(x_e, H, W)
-        x_rgb = self.norm4(x_rgb)
-        x_e = self.extra_norm4(x_e)
+            x = blk(x, H, W)
+        x = self.norm4(x)
+        x = x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        outs.append(x)
 
-        x_rgb = x_rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-        x_e = x_e.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-        x_rgb, x_e = self.FRMs[3](x_rgb, x_e)
-        x_fused = self.FFMs[3](x_rgb, x_e)
-        outs.append(x_fused)
-        
         return outs
 
-    def forward(self, x_rgb, x_e):
-        out = self.forward_features(x_rgb, x_e)
-        return out
+    def forward(self, x):
+        x = self.forward_features(x)
+        # x = self.head(x)
+
+        return x
 
 
-def load_path_model(model, model_file):
+def load_model(model, model_file):
     # load raw state_dict
     t_start = time.time()
     if isinstance(model_file, str):
@@ -410,22 +358,23 @@ def load_path_model(model, model_file):
     else:
         raw_state_dict = model_file
     
-    state_dict = {}
+    # state_dict = {}
     for k, v in raw_state_dict.items():
-        if k.find('patch_embed') >= 0:
-            state_dict[k] = v
-            state_dict[k.replace('patch_embed', 'extra_patch_embed')] = v
-        elif k.find('block') >= 0:
-            state_dict[k] = v
-            state_dict[k.replace('block', 'extra_block')] = v
-        elif k.find('norm') >= 0:
-            state_dict[k] = v
-            state_dict[k.replace('norm', 'extra_norm')] = v
+        print (k)
+    #     if k.find('patch_embed') >= 0:
+    #         state_dict[k] = v
+    #         state_dict[k.replace('patch_embed', 'extra_patch_embed')] = v
+    #     elif k.find('block') >= 0:
+    #         state_dict[k] = v
+    #         state_dict[k.replace('block', 'extra_block')] = v
+    #     elif k.find('norm') >= 0:
+    #         state_dict[k] = v
+    #         state_dict[k.replace('norm', 'extra_norm')] = v
 
     t_ioend = time.time()
 
-    model.load_state_dict(state_dict, strict=False)
-    del state_dict
+    model.load_state_dict(raw_state_dict, strict=False)
+    del raw_state_dict
     
     t_end = time.time()
     logger.info(
@@ -433,7 +382,7 @@ def load_path_model(model, model_file):
             t_ioend - t_start, t_end - t_ioend))
 
 
-class mit_b0(RGBXTransformer):
+class mit_b0(SegTransformer):
     def __init__(self, fuse_cfg=None, **kwargs):
         super(mit_b0, self).__init__(
             patch_size=4, embed_dims=[32, 64, 160, 256], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
@@ -441,7 +390,7 @@ class mit_b0(RGBXTransformer):
             drop_rate=0.0, drop_path_rate=0.1)
 
 
-class mit_b1(RGBXTransformer):
+class mit_b1(SegTransformer):
     def __init__(self, fuse_cfg=None, **kwargs):
         super(mit_b1, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
@@ -449,7 +398,7 @@ class mit_b1(RGBXTransformer):
             drop_rate=0.0, drop_path_rate=0.1)
 
 
-class mit_b2(RGBXTransformer):
+class mit_b2(SegTransformer):
     def __init__(self, fuse_cfg=None, **kwargs):
         super(mit_b2, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
@@ -457,7 +406,7 @@ class mit_b2(RGBXTransformer):
             drop_rate=0.0, drop_path_rate=0.1)
 
 
-class mit_b3(RGBXTransformer):
+class mit_b3(SegTransformer):
     def __init__(self, fuse_cfg=None, **kwargs):
         super(mit_b3, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
@@ -465,7 +414,7 @@ class mit_b3(RGBXTransformer):
             drop_rate=0.0, drop_path_rate=0.1)
 
 
-class mit_b4(RGBXTransformer):
+class mit_b4(SegTransformer):
     def __init__(self, fuse_cfg=None, **kwargs):
         super(mit_b4, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
@@ -473,7 +422,7 @@ class mit_b4(RGBXTransformer):
             drop_rate=0.0, drop_path_rate=0.1)
 
 
-class mit_b5(RGBXTransformer):
+class mit_b5(SegTransformer):
     def __init__(self, fuse_cfg=None, **kwargs):
         super(mit_b5, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
