@@ -85,7 +85,7 @@ class Evaluator(object):
 
         for model in models:
             logger.info("Load Model: %s" % model)
-            self.val_func = load_model(self.network, model)
+            self.val_func = load_model(self.network, model, is_restore=True)
             if len(self.devices ) == 1:
                 iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.single_process_evalutation()
             else:
@@ -201,11 +201,10 @@ class Evaluator(object):
         processed_pred = np.zeros((ori_rows, ori_cols, self.class_num))
 
         for s in self.multi_scales:
-            img_scale = cv2.resize(img, None, fx=s, fy=s,
+            img_scaled = cv2.resize(img, None, fx=s, fy=s,
                                    interpolation=cv2.INTER_LINEAR)
-            new_rows, new_cols, _ = img_scale.shape
-            processed_pred += self.scale_process(img_scale,
-                                                 (ori_rows, ori_cols),
+            new_rows, new_cols, _ = img_scaled.shape
+            processed_pred += self.scale_process(img_scaled, (ori_rows, ori_cols),
                                                  crop_size, stride_rate, device)
 
         pred = processed_pred.argmax(2)
@@ -217,7 +216,8 @@ class Evaluator(object):
         new_rows, new_cols, c = img.shape
         long_size = new_cols if new_cols > new_rows else new_rows
 
-        if long_size <= crop_size:
+        # if long_size <= crop_size:
+        if new_cols <= crop_size[1] or new_rows <= crop_size[0]:
             input_data, margin = self.process_image(img, crop_size)
             score = self.val_func_process(input_data, device)
             score = score[:, margin[0]:(score.shape[1] - margin[1]),
