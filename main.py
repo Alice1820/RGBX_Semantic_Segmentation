@@ -51,7 +51,7 @@ if __name__ == '__main__':
     # config = import_module(config_name)
 
     parser.add_argument('--config', type=str, default=None)
-    parser.add_argument('-d', '--devices', default='0, 1, 2, 3',
+    parser.add_argument('-d', '--devices', default='0',
                        help='set data parallel training')
     parser.add_argument('-c', '--continue', type=extant_file,
                     metavar="FILE",
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--verbose', default=False, action='store_true')
     parser.add_argument('--show_image', '-s', default=False,
                         action='store_true')
-    parser.add_argument('--save_path', default='/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2')
+    parser.add_argument('--save_path', default='/data0/xfzhang/data/NYUv2/results/')
     args = parser.parse_args()
     config = import_module(args.config)
     # print (config)

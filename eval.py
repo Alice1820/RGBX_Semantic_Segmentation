@@ -105,7 +105,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose', default=False, action='store_true')
     parser.add_argument('--show_image', '-s', default=False,
                         action='store_true')
-    parser.add_argument('--save_path', '-p', default='/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2/results/')
+    parser.add_argument('--save_path', '-p', default='/data0/xfzhang/data/NYUv2/results/')
 
     args = parser.parse_args()
     all_dev = parse_devices(args.devices)

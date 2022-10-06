@@ -68,7 +68,7 @@ C.lr = 6e-5
 C.lr_power = 0.9
 C.momentum = 0.9
 C.weight_decay = 0.01
-C.batch_size = 8
+C.batch_size = 4
 C.nepochs = 2000
 C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
 C.num_workers = 16
@@ -87,8 +87,8 @@ C.eval_flip = False # True #
 C.eval_crop_size = [480, 640] # [height weight]
 
 """Store Config"""
-C.checkpoint_start_epoch = 1
-C.checkpoint_step = 1
+C.checkpoint_start_epoch = 150
+C.checkpoint_step = 25
 
 """Path Config"""
 def add_path(path):
