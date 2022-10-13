@@ -15,7 +15,7 @@ from torch.nn.parallel import DistributedDataParallel, DataParallel
 from dataloader.dataloader import get_train_loader
 from models.dual_builder import RGBXEncoderDecoder as dualsegmodel
 from models.builder import EncoderDecoder as segmodel
-from dataloader.RGBXDataset import RGBX_U, RGBX_X
+from dataloader.RGBXDataset import RGBX_U, RGBX_X, RGBX_Base
 from utils.init_func import init_weight, group_weight
 from utils.lr_policy import WarmUpPolyLR
 from engine.engine import Engine
@@ -90,9 +90,11 @@ if __name__ == '__main__':
 
          # data loader
         if config['num_labeled'] is not None:
-            train_loader, train_sampler = get_train_loader(engine, RGBX_X, config)
+            DATASET = RGBX_X
+            train_loader, train_sampler = get_train_loader(engine, DATASET, config)
         else:
-            train_loader, train_sampler = get_train_loader(engine, RGBX_U, config)
+            DATASET = RGBX_Base
+            train_loader, train_sampler = get_train_loader(engine, DATASET, config)
 
         if (engine.distributed and (engine.local_rank == 0)) or (not engine.distributed):
             tb_dir = config.tb_dir + '/{}'.format(time.strftime("%b%d_%d-%H-%M", time.localtime()))
@@ -247,9 +249,11 @@ if __name__ == '__main__':
                                 'class_names': config.class_names,
                                 'train_source': config.train_source,
                                 'eval_source': config.eval_source,
-                                'class_names': config.class_names}
+                                'class_names': config.class_names,
+                                'num_labeled': config.num_labeled,
+                                }
                 val_pre = ValPre()
-                dataset = RGBXDataset(data_setting, 'val', val_pre)
+                dataset = RGBX_Base(data_setting, 'val', val_pre)
                 with torch.no_grad():
                     segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
                                             config.norm_std, model,

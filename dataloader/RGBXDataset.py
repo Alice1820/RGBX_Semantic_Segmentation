@@ -134,8 +134,9 @@ class RGBX_X(RGBX_Base):
     def __init__(self, setting, split_name, preprocess=None, file_length=None):
         # semi-supervised setting
         # self.semi = True
-        self.num_labeled = setting['num_labeled']
-        set_seed(setting['seed'])
+        if split_name == 'train':
+            self.num_labeled = setting['num_labeled']
+            set_seed(setting['seed'])
         super(RGBX_X, self).__init__(setting, split_name, preprocess=preprocess, file_length=file_length)
 
     def _get_file_names(self, split_name):
