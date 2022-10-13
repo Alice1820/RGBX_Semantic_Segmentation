@@ -103,7 +103,7 @@ def get_train_loader(engine, dataset, config):
                     'seed': config.seed,
                     }
                     
-    train_preprocess = TrainPre(config)
+    train_preprocess = TrainPreX(config)
 
     train_dataset = dataset(data_setting, "train", train_preprocess, config.batch_size * config.niters_per_epoch)
 

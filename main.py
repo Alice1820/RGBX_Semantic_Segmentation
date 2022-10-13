@@ -15,7 +15,7 @@ from torch.nn.parallel import DistributedDataParallel, DataParallel
 from dataloader.dataloader import get_train_loader
 from models.dual_builder import RGBXEncoderDecoder as dualsegmodel
 from models.builder import EncoderDecoder as segmodel
-from dataloader.RGBXDataset import RGBXDataset
+from dataloader.RGBXDataset import RGBX_U, RGBX_X
 from utils.init_func import init_weight, group_weight
 from utils.lr_policy import WarmUpPolyLR
 from engine.engine import Engine
@@ -88,8 +88,11 @@ if __name__ == '__main__':
         if torch.cuda.is_available():
             torch.cuda.manual_seed(seed)
 
-        # data loader
-        train_loader, train_sampler = get_train_loader(engine, RGBXDataset, config)
+         # data loader
+        if config['num_labeled'] is not None:
+            train_loader, train_sampler = get_train_loader(engine, RGBX_X, config)
+        else:
+            train_loader, train_sampler = get_train_loader(engine, RGBX_U, config)
 
         if (engine.distributed and (engine.local_rank == 0)) or (not engine.distributed):
             tb_dir = config.tb_dir + '/{}'.format(time.strftime("%b%d_%d-%H-%M", time.localtime()))
