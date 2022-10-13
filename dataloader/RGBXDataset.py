@@ -136,7 +136,7 @@ class RGBX_X(RGBX_U):
         # self.semi = True
         self.num_labeled = setting['num_labeled']
         set_seed(setting['seed'])
-        super(RGBX_X, self).__init__(setting, split_name, preprocess=None, file_length=None)
+        super(RGBX_X, self).__init__(setting, split_name, preprocess=preprocess, file_length=file_length)
 
     def _get_file_names(self, split_name):
         assert split_name in ['train', 'val']

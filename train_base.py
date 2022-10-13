@@ -14,6 +14,7 @@ from torch.nn.parallel import DistributedDataParallel
 # from config import config
 from dataloader.dataloader import get_train_loader
 from models.builder import EncoderDecoder as segmodel
+from models.dual_builder import RGBXEncoderDecoder as dualsegmodel
 from dataloader.RGBXDataset import RGBX_U, RGBX_X
 from utils.init_func import init_weight, group_weight
 from utils.lr_policy import WarmUpPolyLR
@@ -76,7 +77,10 @@ with Engine(args=args) as engine:
     else:
         BatchNorm2d = nn.BatchNorm2d
     
-    model=segmodel(cfg=config, criterion=criterion, norm_layer=BatchNorm2d)
+    if config.modals == 'RGBD':
+        model=dualsegmodel(cfg=config, criterion=criterion, norm_layer=BatchNorm2d)
+    else:
+        model=segmodel(cfg=config, criterion=criterion, norm_layer=BatchNorm2d)
     
     # group weight and config optimizer
     base_lr = config.lr

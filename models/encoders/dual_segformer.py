@@ -355,6 +355,7 @@ class RGBXTransformer(nn.Module):
     def forward_features(self, x_rgb, x_e):
         """
         x_rgb: B x N x H x W
+        x_e: B x N x H x W
         """
         B = x_rgb.shape[0]
         outs = []
