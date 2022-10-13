@@ -66,7 +66,12 @@ def get_train_loader(engine, dataset, config):
                     'class_names': config.class_names,
                     'train_source': config.train_source,
                     'eval_source': config.eval_source,
-                    'class_names': config.class_names}
+                    'class_names': config.class_names,
+                    'num_labeled': config.num_labeled,
+                    'semi': config.semi,
+                    'seed': config.seed,
+                    }
+                    
     train_preprocess = TrainPre(config)
 
     train_dataset = dataset(data_setting, "train", train_preprocess, config.batch_size * config.niters_per_epoch)
@@ -89,3 +94,4 @@ def get_train_loader(engine, dataset, config):
                                    sampler=train_sampler)
 
     return train_loader, train_sampler
+

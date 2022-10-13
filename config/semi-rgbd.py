@@ -21,8 +21,9 @@ C.abs_dir = osp.realpath(".")
 
 """Semi Learn"""
 C.modals = 'RGBD'
-C.semi = False
-C.num_labeled = None
+C.semi = True
+C.num_labeled = 100
+C.algo = 'multimatch'
 
 # Dataset config
 """Dataset Path"""

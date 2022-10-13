@@ -5,11 +5,11 @@ import torch
 import numpy as np
 
 import torch.utils.data as data
+from utils import *
 
-
-class RGBXDataset(data.Dataset):
+class RGBX_U(data.Dataset):
     def __init__(self, setting, split_name, preprocess=None, file_length=None):
-        super(RGBXDataset, self).__init__()
+        super(RGBX_U, self).__init__()
         self._split_name = split_name
         self._rgb_path = setting['rgb_root']
         self._rgb_format = setting['rgb_format']
@@ -73,6 +73,7 @@ class RGBXDataset(data.Dataset):
             self.source = self._eval_source
 
         file_names = [f.split('.')[0] for f in sorted(os.listdir(os.path.join(self._rgb_path, self.source)))]
+
         # with open(source) as f:
         #     files = f.readlines()
 
@@ -128,3 +129,24 @@ class RGBXDataset(data.Dataset):
             cmap[i, 2] = b
         class_colors = cmap.tolist()
         return class_colors
+
+class RGBX_X(RGBX_U):
+    def __init__(self, setting, split_name, preprocess=None, file_length=None):
+        # semi-supervised setting
+        # self.semi = True
+        self.num_labeled = setting['num_labeled']
+        set_seed(setting['seed'])
+        super(RGBX_X, self).__init__(setting, split_name, preprocess=None, file_length=None)
+
+    def _get_file_names(self, split_name):
+        assert split_name in ['train', 'val']
+        self.source = self._train_source
+        if split_name == "val":
+            self.source = self._eval_source
+
+        file_names = [f.split('.')[0] for f in sorted(os.listdir(os.path.join(self._rgb_path, self.source)))]
+
+        # semi-supervised
+        file_names = random_choices(file_names, self.num_labeled)
+
+        return file_names

@@ -12,17 +12,18 @@ cfg = C
 
 C.seed = 15
 
-C.task = 'base-rgbd'
+C.task = 'base-rgbd1'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-C.data_dir = '/data0/xfzhang/data/NYUv2'
+# C.data_dir = '/data0/xfzhang/data/NYUv2'
+C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
 C.abs_dir = osp.realpath(".")
 
 """Semi Learn"""
 C.modals = 'RGBD'
 C.semi = False
-C.num_labeled = None
+C.num_labeled = 100
 
 # Dataset config
 """Dataset Path"""

@@ -7,7 +7,7 @@ import torch
 import torch.distributed as dist
 
 from .logger import get_logger
-from utils.pyt_utils import load_model, parse_devices, extant_file, link_file, ensure_dir
+from utils.pyt_utils import load_model, parse_devices, link_file, ensure_dir
 
 logger = get_logger()
 

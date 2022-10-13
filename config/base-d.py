@@ -10,9 +10,9 @@ C = edict()
 config = C
 cfg = C
 
-C.seed = 15
+C.seed = 12345
 
-C.task = 'base-rgbd'
+C.task = 'base-d'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
@@ -20,9 +20,7 @@ C.data_dir = '/data0/xfzhang/data/NYUv2'
 C.abs_dir = osp.realpath(".")
 
 """Semi Learn"""
-C.modals = 'RGBD'
-C.semi = False
-C.num_labeled = None
+C.modals = 'Depth'
 
 # Dataset config
 """Dataset Path"""
@@ -70,7 +68,7 @@ C.lr = 6e-5
 C.lr_power = 0.9
 C.momentum = 0.9
 C.weight_decay = 0.01
-C.batch_size = 2
+C.batch_size = 4
 C.nepochs = 2000
 C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
 C.num_workers = 16
@@ -89,8 +87,8 @@ C.eval_flip = False # True #
 C.eval_crop_size = [480, 640] # [height weight]
 
 """Store Config"""
-C.checkpoint_start_epoch = 5
-C.checkpoint_step = 5
+C.checkpoint_start_epoch = 150
+C.checkpoint_step = 25
 
 """Path Config"""
 def add_path(path):
