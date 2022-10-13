@@ -1,3 +1,4 @@
+from json.encoder import py_encode_basestring_ascii
 import cv2
 import torch
 import numpy as np
@@ -24,7 +25,7 @@ def random_scale(rgb, gt, modal_x, scales):
 
     return rgb, gt, modal_x, scale
 
-class TrainPre(object):
+class TrainPreX(object):
     def __init__(self, config):
         self.config = config
         self.norm_mean = config.norm_mean
@@ -42,13 +43,43 @@ class TrainPre(object):
         crop_pos = generate_random_crop_pos(rgb.shape[:2], crop_size)
 
         p_rgb, _ = random_crop_pad_to_shape(rgb, crop_pos, crop_size, 0)
-        p_gt, _ = random_crop_pad_to_shape(gt, crop_pos, crop_size, 255)
         p_modal_x, _ = random_crop_pad_to_shape(modal_x, crop_pos, crop_size, 0)
+        p_gt, _ = random_crop_pad_to_shape(gt, crop_pos, crop_size, 255)
 
         p_rgb = p_rgb.transpose(2, 0, 1)
         p_modal_x = p_modal_x.transpose(2, 0, 1)
         
         return p_rgb, p_gt, p_modal_x
+
+class TrainPreU(object):
+    def __init__(self, config):
+        self.config = config
+        self.norm_mean = config.norm_mean
+        self.norm_std = config.norm_std
+
+    def __base_call__(self, rgb, gt, modal_x):
+        rgb, gt, modal_x = random_mirror(rgb, gt, modal_x)
+        if self.config.train_scale_array is not None:
+            rgb, gt, modal_x, scale = random_scale(rgb, gt, modal_x, self.config.train_scale_array)
+
+        rgb = normalize(rgb, self.norm_mean, self.norm_std)
+        modal_x = normalize(modal_x, self.norm_mean, self.norm_std)
+
+        crop_size = (self.config.image_height, self.config.image_width)
+        crop_pos = generate_random_crop_pos(rgb.shape[:2], crop_size)
+
+        p_rgb, _ = random_crop_pad_to_shape(rgb, crop_pos, crop_size, 0)
+        p_modal_x, _ = random_crop_pad_to_shape(modal_x, crop_pos, crop_size, 0)
+
+        p_rgb = p_rgb.transpose(2, 0, 1)
+        p_modal_x = p_modal_x.transpose(2, 0, 1)
+
+        return p_rgb, p_modal_x
+
+    def __call__(self, rgb, gt, modal_x):
+        p_rgb_a, _, p_modal_x_a = self.__base_call__(rgb, gt, modal_x)
+        p_rgb_b, _, p_modal_x_b = self.__base_call__(rgb, gt, modal_x)
+        return p_rgb_a, p_rgb_b, p_modal_x_a, p_modal_x_b
 
 class ValPre(object):
     def __call__(self, rgb, gt, modal_x):
