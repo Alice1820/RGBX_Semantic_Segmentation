@@ -85,7 +85,7 @@ class ValPre(object):
     def __call__(self, rgb, gt, modal_x):
         return rgb, gt, modal_x
 
-def get_train_loader(engine, dataset, config):
+def get_train_loader(engine, dataset, config, batch_size):
     data_setting = {'rgb_root': config.rgb_root_folder,
                     'rgb_format': config.rgb_format,
                     'gt_root': config.gt_root_folder,
@@ -109,7 +109,8 @@ def get_train_loader(engine, dataset, config):
 
     train_sampler = None
     is_shuffle = True
-    batch_size = config.batch_size
+    # batch_size = config.batch_size
+    batch_size = batch_size
 
     if engine.distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)

@@ -25,3 +25,12 @@ def random_choices_rgbd(rgb_train100, dep_train100, labels_train100, num_clips):
     dep_choice = [dep_train100[i] for i in indexes]
     labels_choice = [labels_train100[i] for i in indexes]
     return rgb_choice, dep_choice, labels_choice
+
+def interleave(x, size):
+    s = list(x.shape)
+    return x.reshape([-1, size] + s[1:]).transpose(0, 1).reshape([-1] + s[1:])
+
+
+def de_interleave(x, size):
+    s = list(x.shape)
+    return x.reshape([size, -1] + s[1:]).transpose(0, 1).reshape([-1] + s[1:])

@@ -37,6 +37,7 @@ class RGBXSegEvaluator(Evaluator):
         results_dict = {'hist': hist_tmp, 'labeled': labeled_tmp, 'correct': correct_tmp}
 
         if self.save_path is not None:
+            ensure_dir(os.path.join(self.save_path))
             ensure_dir(os.path.join(self.save_path, 'results'))
             ensure_dir(os.path.join(self.save_path, 'results_color'))
 

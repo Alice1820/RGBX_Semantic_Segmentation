@@ -39,6 +39,14 @@ os.environ['MASTER_PORT'] = '169710'
 global best_miou
 best_miou = 0
 
+def interleave(x, size):
+    s = list(x.shape)
+    return x.reshape([-1, size] + s[1:]).transpose(0, 1).reshape([-1] + s[1:])
+
+def de_interleave(x, size):
+    s = list(x.shape)
+    return x.reshape([size, -1] + s[1:]).transpose(0, 1).reshape([-1] + s[1:])
+
 def create_model(config, criterion, norm_layer=None):
     if config.algo == 'supervised':
         if config.modals in ['RGB', 'Depth']:
@@ -47,10 +55,10 @@ def create_model(config, criterion, norm_layer=None):
             return dualsegmodel(cfg=config, criterion=criterion, norm_layer=norm_layer)
     elif config.algo == 'multimatch':
         assert config.modals == 'RGBD'
-        return rgbdFusMultiMatch(config, criterion=MultiMatchLoss(), norm_layer=norm_layer)
+        return rgbdFusMultiMatch(config, criterion=MultiMatchLoss(ignore_index=config.background), norm_layer=norm_layer)
     elif config.algo == 'fixmatch':
         assert config.modals == 'RGBD'
-        return rgbdFusMultiMatch(config, criterion=FixMatchLoss(), norm_layer=norm_layer)
+        return rgbdFusMultiMatch(config, criterion=FixMatchLoss(ignore_index=config.background), norm_layer=norm_layer)
     else:
         raise NotImplementedError
 
@@ -63,7 +71,10 @@ def find_loss(model, config, imgs, modal_xs, gts):
         elif config.modals == 'Depth':
             loss = model(modal_xs, gts)
     elif config.algo == 'multimatch':
-        loss = model(imgs, modal_xs)
+        # print (imgs.size())
+        # print (modal_xs.size())
+        # print (gts.size())
+        loss = model(imgs, modal_xs, gts)
     return loss
 
 if __name__ == '__main__':
@@ -112,13 +123,9 @@ if __name__ == '__main__':
             torch.cuda.manual_seed(seed)
 
          # data loader
-        if config['num_labeled'] is not None:
-            DATASET = RGBX_X
-            train_loader, train_sampler = get_train_loader(engine, DATASET, config)
-        else:
-            DATASET = RGBX_Base
-            train_loader, train_sampler = get_train_loader(engine, DATASET, config)
-
+        train_labeled_loader, train_labeled_sampler = get_train_loader(engine, RGBX_X, config, config.batch_size)
+        train_unlabeled_loader, train_unlabeled_sampler = get_train_loader(engine, RGBX_Base, config, config.batch_size*config.mu)
+        
         if (engine.distributed and (engine.local_rank == 0)) or (not engine.distributed):
             tb_dir = config.tb_dir + '/{}'.format(time.strftime("%b%d_%d-%H-%M", time.localtime()))
             generate_tb_dir = config.tb_dir + '/tb'
@@ -133,7 +140,7 @@ if __name__ == '__main__':
         else:
             BatchNorm2d = nn.BatchNorm2d
         
-        model = create_model(cfg=config, criterion=criterion, norm_layer=BatchNorm2d)
+        model = create_model(config=config, criterion=criterion, norm_layer=BatchNorm2d)
 
         # group weight and config optimizer
         base_lr = config.lr
@@ -165,7 +172,7 @@ if __name__ == '__main__':
             model.to(device)
             # model = DataParallel(model)
 
-        engine.register_state(dataloader=train_loader, model=model,
+        engine.register_state(dataloader=train_labeled_loader, model=model,
                             optimizer=optimizer)
         if engine.continue_state_object:
             engine.restore_checkpoint()
@@ -176,30 +183,34 @@ if __name__ == '__main__':
         
         for epoch in range(engine.state.epoch, config.nepochs+1):
             if engine.distributed:
-                train_sampler.set_epoch(epoch)
+                train_labeled_sampler.set_epoch(epoch)
+                train_unlabeled_sampler.set_epoch(epoch)
             bar_format = '{desc}[{elapsed}<{remaining},{rate_fmt}]'
             pbar = tqdm(range(config.niters_per_epoch), file=sys.stdout,
                         bar_format=bar_format)
-            dataloader = iter(train_loader)
-
+            labeled_iter = iter(train_labeled_loader)
+            unlabeled_iter = iter(train_unlabeled_loader)
             sum_loss = 0
 
             for idx in pbar:
                 engine.update_iteration(epoch, idx)
 
-                minibatch = dataloader.next()
-                imgs = minibatch['data']
-                gts = minibatch['label']
-                modal_xs = minibatch['modal_x']
+                minibatch_x = labeled_iter.next()
+                minibatch_u = unlabeled_iter.next()
 
-                imgs = imgs.cuda(non_blocking=True)
-                gts = gts.cuda(non_blocking=True)
-                modal_xs = modal_xs.cuda(non_blocking=True)
-                # print (gts)
-                # exit()
+                imgs_x = minibatch_x['data'].cuda(non_blocking=True)
+                gts_x = minibatch_x['label'].cuda(non_blocking=True)
+                modal_xs_x = minibatch_x['modal_x'].cuda(non_blocking=True)
 
+                imgs_u = minibatch_u['data'].cuda(non_blocking=True)
+                modal_xs_u = minibatch_u['modal_x'].cuda(non_blocking=True)
+
+                imgs = interleave(
+                    torch.cat((imgs_x, imgs_u)), config.mu+1)
+                modal_xs = interleave(
+                    torch.cat((modal_xs_x, modal_xs_u)), config.mu+1)
                 aux_rate = 0.2
-                loss = find_loss(model, config, imgs, modal_xs, gts)
+                loss = find_loss(model, config, imgs, modal_xs, gts_x)
                 # parallel training
                 loss = loss.mean()
                 # reduce the whole loss over multi-gpu

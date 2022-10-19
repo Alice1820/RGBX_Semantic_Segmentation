@@ -1,3 +1,4 @@
+from audioop import mul
 import os
 import logging
 
@@ -159,7 +160,7 @@ class FixMatchLoss(torch.nn.CrossEntropyLoss):
         mask = max_probs.ge(self.threshold).float() # prob of max_probs > threshold
 
         # print (max_probs.mean())
-        return mask.mean(), (F.cross_entropy(input_s, targets_u, reduction='none') * mask).mean()
+        return mask.mean(), (F.cross_entropy(input_s, targets_u, reduction='none', ignore_index=self.ignore_index) * mask).mean()
 
 
 #####################################################################
@@ -304,18 +305,18 @@ class MultiMatchLoss(torch.nn.CrossEntropyLoss):
     def forward(self, input_a_w: Tensor, input_a_s: Tensor, input_b_w: Tensor, input_b_s: Tensor) -> Tensor:
         # Two modalities
         # Modal A
-        pseudo_label_a = torch.softmax(input_a_w.detach()/self.T, dim=-1)
-        max_probs_a, targets_a_u = torch.max(pseudo_label_a, dim=-1) # [bs, 1]
+        pseudo_label_a = torch.softmax(input_a_w.detach()/self.T, dim=1)
+        max_probs_a, targets_a_u = torch.max(pseudo_label_a, dim=1) # [bs, 1]
         mask_a = max_probs_a.ge(self.threshold[0]).float() # prob of max_probs > threshold
         # Modal B
-        pseudo_label_b = torch.softmax(input_b_w.detach()/self.T, dim=-1)
-        max_probs_b, targets_b_u = torch.max(pseudo_label_b, dim=-1) # [bs, 1], [bs, 1]
+        pseudo_label_b = torch.softmax(input_b_w.detach()/self.T, dim=1)
+        max_probs_b, targets_b_u = torch.max(pseudo_label_b, dim=1) # [bs, 1], [bs, 1]
         mask_b = max_probs_b.ge(self.threshold[1]).float() # prob of max_probs > threshold
 
         # print (max_probs_a.mean())
         # print (max_probs_b.mean())
-        multimatch_a = (F.cross_entropy(input_a_s, targets_a_u, reduction='none') * mask_a).mean()+ \
-                    (F.cross_entropy(input_a_s, targets_b_u, reduction='none') * mask_b).mean()
-        multimatch_b = (F.cross_entropy(input_b_s, targets_b_u, reduction='none') * mask_b).mean() + \
-                    (F.cross_entropy(input_b_s, targets_a_u, reduction='none') * mask_a).mean()
-        return mask_a.mean(), mask_b.mean(), multimatch_a, multimatch_b
+        multimatch_a = (F.cross_entropy(input_a_s, targets_a_u, reduction='none', ignore_index=self.ignore_index) * mask_a).mean()+ \
+                       (F.cross_entropy(input_a_s, targets_b_u, reduction='none', ignore_index=self.ignore_index) * mask_b).mean()
+        multimatch_b = (F.cross_entropy(input_b_s, targets_b_u, reduction='none', ignore_index=self.ignore_index) * mask_b).mean() + \
+                       (F.cross_entropy(input_b_s, targets_a_u, reduction='none', ignore_index=self.ignore_index) * mask_a).mean()
+        return mask_a.mean(), mask_b.mean(), multimatch_a, multimatch_b, (multimatch_a + multimatch_b) / 2
