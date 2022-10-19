@@ -69,4 +69,5 @@ class rgbdFusMultiMatch(nn.Module):
         loss_x *= 0.33
         loss_u *= 0.5
         loss = loss_x + loss_u
+
         return loss

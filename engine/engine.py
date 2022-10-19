@@ -102,6 +102,15 @@ class Engine(object):
         last_epoch_checkpoint = osp.join(checkpoint_dir, 'epoch-last.pth')
         link_file(current_epoch_checkpoint, last_epoch_checkpoint)
 
+    def save_and_link_subcheckpoint(self, checkpoint_dir, log_dir, log_dir_link):
+        ensure_dir(checkpoint_dir)
+        if not osp.exists(log_dir_link):
+            link_file(log_dir, log_dir_link)
+        current_epoch_checkpoint = osp.join(checkpoint_dir, 'epoch-{}-{}.pth'.format(
+            self.state.epoch))
+        self.save_checkpoint(current_epoch_checkpoint)
+        last_epoch_checkpoint = osp.join(checkpoint_dir, 'epoch-last.pth')
+        link_file(current_epoch_checkpoint, last_epoch_checkpoint)
 
     def restore_checkpoint(self):
         t_start = time.time()

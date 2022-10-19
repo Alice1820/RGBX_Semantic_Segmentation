@@ -37,7 +37,8 @@ class Evaluator(object):
         self.verbose = verbose
         self.save_path = save_path
         if save_path is not None:
-            ensure_dir(save_path)
+            self.save_path = os.path.join(self.save_path, self.config.modals)
+            ensure_dir(self.save_path)
         self.show_image = show_image
 
     def run(self, model_path, model_indice, log_file, log_file_link, tb=None, epoch=-1):
@@ -86,7 +87,7 @@ class Evaluator(object):
         for model in models:
             logger.info("Load Model: %s" % model)
             self.val_func = load_model(self.network, model, is_restore=False)
-            if len(self.devices ) == 1:
+            if len(self.devices) == 1:
                 iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.single_process_evalutation()
             else:
                 iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.multi_process_evaluation()
@@ -104,6 +105,39 @@ class Evaluator(object):
             tb.add_scalar('eval/mean_pixel_acc', mean_pixel_acc, epoch)
             tb.add_scalar('eval/pixel_acc', pixel_acc, epoch)
 
+    def run_current(self, model, log_file, log_file_link, tb=None, epoch=-1):
+        """There are four evaluation modes:
+            1.only eval a .pth model: -e *.pth
+            2.only eval a certain epoch: -e epoch
+            3.eval all epochs in a given section: -e start_epoch-end_epoch
+            4.eval all epochs from a certain started epoch: -e start_epoch-
+            """
+        if self.config.modals == 'RGB':
+            self.val_func = model.l_to_ab
+        elif self.config.modals == 'Depth':
+            self.val_func = model.ab_to_l
+        elif self.config.modals == 'RGBD':
+            self.val_func = model.l_and_ab
+        # logger.info("Load Model: %s" % model)
+        # self.val_func = load_model(self.network, model, is_restore=False)
+        if len(self.devices ) == 1:
+            iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.single_process_evalutation()
+        else:
+            iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.multi_process_evaluation()
+        
+        results = open(log_file, 'a')
+        link_file(log_file, log_file_link)
+
+        results.write(result_line)
+        results.write('\n')
+        results.flush()
+
+        results.close()
+        if tb is not None:
+            tb.add_scalar('eval/{}/mean_IoU'.format(self.config.modals), mean_IoU, epoch)
+            tb.add_scalar('eval/{}/freq_IoU'.format(self.config.modals), freq_IoU, epoch)
+            tb.add_scalar('eval/{}/mean_pixel_acc'.format(self.config.modals), mean_pixel_acc, epoch)
+            tb.add_scalar('eval/{}/pixel_acc'.format(self.config.modals), pixel_acc, epoch)
 
 
     def single_process_evalutation(self):
@@ -113,7 +147,7 @@ class Evaluator(object):
         all_results = []
         for idx in tqdm(range(self.ndata)):
             dd = self.dataset[idx]
-            results_dict = self.func_per_iteration(dd,self.devices[0])
+            results_dict = self.func_per_iteration(dd, self.devices[0])
             all_results.append(results_dict)
         iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.compute_metric(all_results)
         logger.info(

@@ -152,7 +152,7 @@ def load_restore_model(model, model_file):
 
     return model
 
-def load_model(model, model_file, is_restore=False):
+def load_model(model, model_file, sub_module='RGB', is_restore=False):
     t_start = time.time()
 
     if model_file is None:
@@ -170,6 +170,9 @@ def load_model(model, model_file, is_restore=False):
         state_dict = model_file
     t_ioend = time.time()
 
+    if sub_module is not None:
+        if sub_module == 'RGB':
+            state_dict = state_dict.l_to_ab
     if is_restore:
         new_state_dict = OrderedDict()
         for k, v in state_dict.items():

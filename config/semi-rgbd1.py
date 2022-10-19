@@ -12,7 +12,7 @@ cfg = C
 
 C.seed = 15
 
-C.task = 'base-rgbd'
+C.task = 'semi-rgbd1'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
@@ -77,6 +77,7 @@ C.weight_decay = 0.01
 C.batch_size = 1
 C.nepochs = 2000
 C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
+# C.niters_per_epoch = 100
 C.num_workers = 16
 C.train_scale_array = [0.5, 0.75, 1, 1.25, 1.5, 1.75]
 C.warm_up_epoch = 10

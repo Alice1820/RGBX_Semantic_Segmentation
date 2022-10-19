@@ -284,10 +284,27 @@ if __name__ == '__main__':
                 val_pre = ValPre()
                 dataset = RGBX_Base(data_setting, 'val', val_pre)
                 with torch.no_grad():
+                    config.modals = 'RGB'
                     segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
-                                            config.norm_std, model,
+                                            config.norm_std, model.l_to_ab,
                                             config.eval_scale_array, config.eval_flip,
                                             all_dev, args.verbose, config.save_path,
                                             args.show_image)
-                    segmentor.run(config.checkpoint_dir, args.epochs, config.val_log_file,
+                    segmentor.run_current(model, config.val_log_file,
+                                config.link_val_log_file, tb, epoch)
+                    config.modals = 'Depth'
+                    segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
+                                            config.norm_std, model.ab_to_l,
+                                            config.eval_scale_array, config.eval_flip,
+                                            all_dev, args.verbose, config.save_path,
+                                            args.show_image)
+                    segmentor.run_current(model, config.val_log_file,
+                                config.link_val_log_file, tb, epoch)
+                    config.modals = 'RGBD'
+                    segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
+                                            config.norm_std, model.l_and_ab,
+                                            config.eval_scale_array, config.eval_flip,
+                                            all_dev, args.verbose, config.save_path,
+                                            args.show_image)
+                    segmentor.run_current(model, config.val_log_file,
                                 config.link_val_log_file, tb, epoch)
