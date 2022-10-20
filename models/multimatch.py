@@ -38,7 +38,7 @@ class rgbdFusMultiMatch(nn.Module):
         self.criterion_x = nn.CrossEntropyLoss(reduction='mean', ignore_index=config.background)
         self.criterion_u = criterion
 
-    def forward(self, l, ab, gts=None):
+    def forward(self, l, ab, gts=None, tb=None):
         l = l.contiguous().clone()
         ab = ab.contiguous().clone()
         logits_l = self.l_to_ab(l)
@@ -63,11 +63,17 @@ class rgbdFusMultiMatch(nn.Module):
         loss_x = self.criterion_x(logits_l_x, gts.long()) + \
                  self.criterion_x(logits_ab_x, gts.long()) + \
                  self.criterion_x(logits_en_x, gts.long())
-        loss_u = self.criterion_u(logits_l_u, logits_l_u, logits_ab_u, logits_ab_u)[-1] + \
-                 self.criterion_u(logits_l_u, logits_l_u, logits_en_u, logits_en_u)[-1] + \
-                 self.criterion_u(logits_ab_u, logits_ab_u, logits_en_u, logits_en_u)[-1] 
+        mask_l, mask_ab, thres_l, thres_ab, _, _, loss_lab_u = self.criterion_u(logits_l_u, logits_l_u, logits_ab_u, logits_ab_u)
+        _, mask_en, _, thres_en, _, _, loss_len_u = self.criterion_u(logits_l_u, logits_l_u, logits_en_u, logits_en_u)
+        _, _, _, _, _, _, loss_aben_u = self.criterion_u(logits_ab_u, logits_ab_u, logits_en_u, logits_en_u)
         loss_x *= 0.33
-        loss_u *= 0.5
+
+        # unsupervised loss
+        loss_u = (loss_lab_u + loss_len_u + loss_aben_u) * 0.5
         loss = loss_x + loss_u
 
-        return loss
+        if tb is not None:
+            pass 
+        outputs = {'loss': loss, 'mask_rgb': mask_l, 'mask_dep': mask_ab, 'mask_en': mask_en, 
+                   'loss_x': loss_x, 'loss_u': loss_u, 'thres_rgb': thres_l, 'thres_dep': thres_ab, 'thres_en': thres_en}
+        return outputs

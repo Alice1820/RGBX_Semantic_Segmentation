@@ -12,7 +12,7 @@ cfg = C
 
 C.seed = 15
 
-C.task = 'semi-rgbd1'
+C.task = 'semi-rgbd2'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
@@ -24,7 +24,7 @@ C.abs_dir = osp.realpath(".")
 """Semi Learn"""
 C.modals = 'RGBD'
 C.semi = True
-C.num_labeled = 100
+C.num_labeled = 300
 C.algo = 'multimatch'
 C.mu = 1
 

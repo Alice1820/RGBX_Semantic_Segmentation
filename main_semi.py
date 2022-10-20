@@ -22,6 +22,7 @@ from models.criterion import FixMatchLoss, MultiMatchLoss
 from dataloader.RGBXDataset import RGBX_U, RGBX_X, RGBX_Base
 from utils.init_func import init_weight, group_weight
 from utils.lr_policy import WarmUpPolyLR
+from utils.utils import AverageMeter
 from engine.engine import Engine
 from engine.logger import get_logger
 from utils.pyt_utils import all_reduce_tensor, extant_file
@@ -76,6 +77,14 @@ def find_loss(model, config, imgs, modal_xs, gts):
         # print (gts.size())
         loss = model(imgs, modal_xs, gts)
     return loss
+
+def meter_outputs(METERS, outputs):
+    for key, value in outputs.items():
+        METERS[key].update(value.item())
+
+def logger_outputs(METERS, tb, epoch):
+    for key, value in METERS.items():
+        tb.add_scalar('train/{}'.format(key), value.avg, epoch)
 
 if __name__ == '__main__':
     # from config import config
@@ -182,6 +191,10 @@ if __name__ == '__main__':
         logger.info('begin trainning:')
         
         for epoch in range(engine.state.epoch, config.nepochs+1):
+            METERS = {'loss': AverageMeter(), 'loss_x': AverageMeter(), 'loss_u': AverageMeter(), 
+            'mask_rgb': AverageMeter(), 'mask_dep': AverageMeter(), 'mask_en': AverageMeter(),
+            'thres_rgb': AverageMeter(), 'thres_dep': AverageMeter(), 'thres_en': AverageMeter()}
+
             if engine.distributed:
                 train_labeled_sampler.set_epoch(epoch)
                 train_unlabeled_sampler.set_epoch(epoch)
@@ -210,7 +223,9 @@ if __name__ == '__main__':
                 modal_xs = interleave(
                     torch.cat((modal_xs_x, modal_xs_u)), config.mu+1)
                 aux_rate = 0.2
-                loss = find_loss(model, config, imgs, modal_xs, gts_x)
+                outputs = find_loss(model, config, imgs, modal_xs, gts_x)
+                meter_outputs(METERS, outputs)
+                loss = outputs['loss']
                 # parallel training
                 loss = loss.mean()
                 # reduce the whole loss over multi-gpu
@@ -227,21 +242,25 @@ if __name__ == '__main__':
                 for i in range(len(optimizer.param_groups)):
                     optimizer.param_groups[i]['lr'] = lr
 
-                if engine.distributed:
-                    sum_loss += reduce_loss.item()
-                    print_str = 'Epoch {}/{}'.format(epoch, config.nepochs) \
+                # if engine.distributed:
+                #     sum_loss += reduce_loss.item()
+                #     print_str = 'Epoch {}/{}'.format(epoch, config.nepochs) \
+                #             + ' Modals: {}'.format(config.modals) \
+                #             + ' Iter {}/{}:'.format(idx + 1, config.niters_per_epoch) \
+                #             + ' lr=%.4e' % lr \
+                #             + ' loss=%.4f total_loss=%.4f' % (reduce_loss.item(), (sum_loss / (idx + 1)))
+                # else:
+                #     sum_loss += loss
+                #     print_str = 'Epoch {}/{}'.format(epoch, config.nepochs) \
+                #             + ' Modals: {}'.format(config.modals) \
+                #             + ' Iter {}/{}:'.format(idx + 1, config.niters_per_epoch) \
+                #             + ' lr=%.4e' % lr \
+                #             + ' loss=%.4f total_loss=%.4f' % (loss, (sum_loss / (idx + 1)))
+                print_str = 'Epoch {}/{}'.format(epoch, config.nepochs) \
                             + ' Modals: {}'.format(config.modals) \
-                            + ' Iter {}/{}:'.format(idx + 1, config.niters_per_epoch) \
-                            + ' lr=%.4e' % lr \
-                            + ' loss=%.4f total_loss=%.4f' % (reduce_loss.item(), (sum_loss / (idx + 1)))
-                else:
-                    sum_loss += loss
-                    print_str = 'Epoch {}/{}'.format(epoch, config.nepochs) \
-                            + ' Modals: {}'.format(config.modals) \
-                            + ' Iter {}/{}:'.format(idx + 1, config.niters_per_epoch) \
-                            + ' lr=%.4e' % lr \
-                            + ' loss=%.4f total_loss=%.4f' % (loss, (sum_loss / (idx + 1)))
-
+                            + ' Iter {}/{}:'.format(idx + 1, config.niters_per_epoch)
+                for key, value in METERS.items():
+                    print_str += ' {}={:.3f} '.format(key, value.avg)
                 del loss
                 pbar.set_description(print_str, refresh=False)
             
@@ -308,3 +327,4 @@ if __name__ == '__main__':
                                             args.show_image)
                     segmentor.run_current(model, config.val_log_file,
                                 config.link_val_log_file, tb, epoch)
+            logger_outputs(METERS, tb, epoch)
