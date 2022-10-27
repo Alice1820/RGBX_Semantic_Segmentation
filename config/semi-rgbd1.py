@@ -12,20 +12,21 @@ cfg = C
 
 C.seed = 15
 
-C.task = 'base-rgbd'
+C.task = 'semi-rgbd1'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
-# C.data_dir = '/data0/xfzhang/data/NYUv2'
+# C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
+C.data_dir = '/data0/xfzhang/data/NYUv2'
 C.save_path = os.path.join(C.data_dir, 'results', C.task)
 C.abs_dir = osp.realpath(".")
 
 """Semi Learn"""
 C.modals = 'RGBD'
-C.semi = False
-C.num_labeled = None
-C.algo = 'supervised'
+C.semi = True
+C.num_labeled = 100
+C.algo = 'multimatch'
+C.mu = 2
 
 # Dataset config
 """Dataset Path"""
@@ -36,7 +37,7 @@ C.rgb_format = '.png'
 C.gt_root_folder = osp.join(C.dataset_path, 'seg40')
 C.gt_format = '.png'
 C.gt_transform = False
-# True when label 0 is invalid, you can also modify the function _transform_gt in dataloader.RGBXDataset
+# True when label 0 is invalid, you can also modifys the function _transform_gt in dataloader.RGBXDataset
 # True for most dataset valid, Faslse for MFNet(?)
 C.x_root_folder = osp.join(C.dataset_path, 'hha')
 C.x_format = '_hha.png'
@@ -62,8 +63,8 @@ C.norm_mean = np.array([0.485, 0.456, 0.406])
 C.norm_std = np.array([0.229, 0.224, 0.225])
 
 """ Settings for network, this would be different for each kind of model"""
-C.backbone = 'mit_b2' # Remember change the path below.
-C.pretrained_model = C.root_dir + '/pretrained/segformer/mit_b2.pth'
+C.backbone = 'mit_b0' # Remember change the path below.
+C.pretrained_model = C.root_dir + '/pretrained/segformer/mit_b0.pth'
 C.decoder = 'MLPDecoder'
 C.decoder_embed_dim = 512
 C.optimizer = 'AdamW'
@@ -73,9 +74,10 @@ C.lr = 6e-5
 C.lr_power = 0.9
 C.momentum = 0.9
 C.weight_decay = 0.01
-C.batch_size = 2
+C.batch_size = 1 # only accept batch_size=1, on 2080Ti
 C.nepochs = 2000
-C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
+# C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
+C.niters_per_epoch = 2048
 C.num_workers = 16
 C.train_scale_array = [0.5, 0.75, 1, 1.25, 1.5, 1.75]
 C.warm_up_epoch = 10
@@ -92,8 +94,8 @@ C.eval_flip = False # True #
 C.eval_crop_size = [480, 640] # [height weight]
 
 """Store Config"""
-C.checkpoint_start_epoch = 5
-C.checkpoint_step = 5
+C.checkpoint_start_epoch = 1
+C.checkpoint_step = 1
 
 """Path Config"""
 def add_path(path):
@@ -101,7 +103,7 @@ def add_path(path):
         sys.path.insert(0, path)
 add_path(osp.join(C.root_dir))
 
-C.log_dir = osp.abspath('log_' + C.dataset_name + '_' + C.backbone)
+C.log_dir = osp.abspath('log_' + C.task + '_' + C.dataset_name + '_' + C.backbone)
 C.tb_dir = osp.abspath(osp.join(C.log_dir, "tb"))
 C.log_dir_link = C.log_dir
 C.checkpoint_dir = osp.abspath(osp.join(C.log_dir, "checkpoint"))

@@ -13,18 +13,15 @@ import torch.backends.cudnn as cudnn
 from torch.nn.parallel import DistributedDataParallel, DataParallel
 
 from dataloader.dataloader import get_train_loader
-from models.dual_builder import RGBXEncoderDecoder as dualsegmodel
-from models.builder import EncoderDecoder as segmodel
-from models.multimatch import rgbdFusMultiMatch, rgbdMultiMatch
-from models.criterion import FixMatchLoss, MultiMatchLoss
+from models.create_model import *
 
-
-from dataloader.RGBXDataset import RGBX_U, RGBX_X, RGBX_Base
+from dataloader.RGBXDataset import RGBX_X, RGBX_Base
 from utils.init_func import init_weight, group_weight
 from utils.lr_policy import WarmUpPolyLR
 from engine.engine import Engine
 from engine.logger import get_logger
 from utils.pyt_utils import all_reduce_tensor, extant_file
+from utils.utils import AverageMeter, meter_outputs, logger_outputs
 
 from tensorboardX import SummaryWriter
 
@@ -38,21 +35,6 @@ os.environ['MASTER_PORT'] = '169710'
 
 global best_miou
 best_miou = 0
-
-def create_model(config, criterion, norm_layer=None):
-    if config.algo == 'supervised':
-        if config.modals in ['RGB', 'Depth']:
-            return segmodel(cfg=config, criterion=criterion, norm_layer=norm_layer)
-        elif config.modals == 'RGBD':
-            return dualsegmodel(cfg=config, criterion=criterion, norm_layer=norm_layer)
-    elif config.algo == 'multimatch':
-        assert config.modals == 'RGBD'
-        return rgbdFusMultiMatch(config, criterion=MultiMatchLoss(), norm_layer=norm_layer)
-    elif config.algo == 'fixmatch':
-        assert config.modals == 'RGBD'
-        return rgbdFusMultiMatch(config, criterion=FixMatchLoss(), norm_layer=norm_layer)
-    else:
-        raise NotImplementedError
 
 def find_loss(model, config, imgs, modal_xs, gts):
     if config.algo == 'supervised':
@@ -114,11 +96,10 @@ if __name__ == '__main__':
          # data loader
         if config['num_labeled'] is not None:
             DATASET = RGBX_X
-            train_loader, train_sampler = get_train_loader(engine, DATASET, config)
+            train_loader, train_sampler = get_train_loader(engine, DATASET, config, config.batch_size)
         else:
             DATASET = RGBX_Base
-            train_loader, train_sampler = get_train_loader(engine, DATASET, config)
-
+            train_loader, train_sampler = get_train_loader(engine, DATASET, config, config.batch_size)
         if (engine.distributed and (engine.local_rank == 0)) or (not engine.distributed):
             tb_dir = config.tb_dir + '/{}'.format(time.strftime("%b%d_%d-%H-%M", time.localtime()))
             generate_tb_dir = config.tb_dir + '/tb'
@@ -133,7 +114,7 @@ if __name__ == '__main__':
         else:
             BatchNorm2d = nn.BatchNorm2d
         
-        model = create_model(cfg=config, criterion=criterion, norm_layer=BatchNorm2d)
+        model = create_model(config=config, criterion=criterion, norm_layer=BatchNorm2d)
 
         # group weight and config optimizer
         base_lr = config.lr
@@ -175,6 +156,9 @@ if __name__ == '__main__':
         logger.info('begin trainning:')
         
         for epoch in range(engine.state.epoch, config.nepochs+1):
+            METERS = {'loss': AverageMeter(), 'loss_x': AverageMeter(), 'loss_u': AverageMeter(), 
+            'mask_rgb': AverageMeter(), 'mask_dep': AverageMeter(), 'mask_en': AverageMeter(),
+            'thres_rgb': AverageMeter(), 'thres_dep': AverageMeter(), 'thres_en': AverageMeter()}
             if engine.distributed:
                 train_sampler.set_epoch(epoch)
             bar_format = '{desc}[{elapsed}<{remaining},{rate_fmt}]'
@@ -199,7 +183,9 @@ if __name__ == '__main__':
                 # exit()
 
                 aux_rate = 0.2
-                loss = find_loss(model, config, imgs, modal_xs, gts)
+                outputs = find_loss(model, config, imgs, modal_xs, gts)
+                meter_outputs(METERS, outputs)
+                loss = outputs['loss']
                 # parallel training
                 loss = loss.mean()
                 # reduce the whole loss over multi-gpu
@@ -231,6 +217,8 @@ if __name__ == '__main__':
                             + ' lr=%.4e' % lr \
                             + ' loss=%.4f total_loss=%.4f' % (loss, (sum_loss / (idx + 1)))
 
+                for key, value in METERS.items():
+                    print_str += ' {}={:.3f} '.format(key, value.avg)
                 del loss
                 pbar.set_description(print_str, refresh=False)
             
@@ -274,9 +262,11 @@ if __name__ == '__main__':
                 dataset = RGBX_Base(data_setting, 'val', val_pre)
                 with torch.no_grad():
                     segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
-                                            config.norm_std, model,
+                                            config.norm_std, model.l_to_ab,
                                             config.eval_scale_array, config.eval_flip,
                                             all_dev, args.verbose, config.save_path,
                                             args.show_image)
-                    segmentor.run(config.checkpoint_dir, args.epochs, config.val_log_file,
+                    segmentor.run_current(model, config.val_log_file,
                                 config.link_val_log_file, tb, epoch)
+            logger_outputs(METERS, tb, epoch)
+                

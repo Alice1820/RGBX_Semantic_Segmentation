@@ -1,6 +1,7 @@
 from ast import parse
 import os.path as osp
 import os
+from re import S
 import sys
 import time
 import argparse
@@ -13,24 +14,21 @@ import torch.backends.cudnn as cudnn
 from torch.nn.parallel import DistributedDataParallel, DataParallel
 
 from dataloader.dataloader import get_train_loader
-from models.dual_builder import RGBXEncoderDecoder as dualsegmodel
-from models.builder import EncoderDecoder as segmodel
-from models.multimatch import rgbdFusMultiMatch, rgbdMultiMatch
-from models.criterion import FixMatchLoss, MultiMatchLoss
+from models.create_model import *
 
-
-from dataloader.RGBXDataset import RGBX_U, RGBX_X, RGBX_Base
+from dataloader.RGBXDataset import RGBX_X, RGBX_Base
 from utils.init_func import init_weight, group_weight
 from utils.lr_policy import WarmUpPolyLR
-from utils.utils import AverageMeter
+from utils.utils import AverageMeter, meter_outputs, logger_outputs
 from engine.engine import Engine
 from engine.logger import get_logger
 from utils.pyt_utils import all_reduce_tensor, extant_file
 
 from tensorboardX import SummaryWriter
 
-parser = argparse.ArgumentParser()
 logger = get_logger()
+
+parser = argparse.ArgumentParser()
 
 from sys import path
 path.append('./config/')
@@ -48,21 +46,6 @@ def de_interleave(x, size):
     s = list(x.shape)
     return x.reshape([size, -1] + s[1:]).transpose(0, 1).reshape([-1] + s[1:])
 
-def create_model(config, criterion, norm_layer=None):
-    if config.algo == 'supervised':
-        if config.modals in ['RGB', 'Depth']:
-            return segmodel(cfg=config, criterion=criterion, norm_layer=norm_layer)
-        elif config.modals == 'RGBD':
-            return dualsegmodel(cfg=config, criterion=criterion, norm_layer=norm_layer)
-    elif config.algo == 'multimatch':
-        assert config.modals == 'RGBD'
-        return rgbdFusMultiMatch(config, criterion=MultiMatchLoss(ignore_index=config.background), norm_layer=norm_layer)
-    elif config.algo == 'fixmatch':
-        assert config.modals == 'RGBD'
-        return rgbdFusMultiMatch(config, criterion=FixMatchLoss(ignore_index=config.background), norm_layer=norm_layer)
-    else:
-        raise NotImplementedError
-
 def find_loss(model, config, imgs, modal_xs, gts):
     if config.algo == 'supervised':
         if config.modals == 'RGBD':
@@ -77,14 +60,6 @@ def find_loss(model, config, imgs, modal_xs, gts):
         # print (gts.size())
         loss = model(imgs, modal_xs, gts)
     return loss
-
-def meter_outputs(METERS, outputs):
-    for key, value in outputs.items():
-        METERS[key].update(value.item())
-
-def logger_outputs(METERS, tb, epoch):
-    for key, value in METERS.items():
-        tb.add_scalar('train/{}'.format(key), value.avg, epoch)
 
 if __name__ == '__main__':
     # from config import config
@@ -207,9 +182,22 @@ if __name__ == '__main__':
 
             for idx in pbar:
                 engine.update_iteration(epoch, idx)
-
-                minibatch_x = labeled_iter.next()
-                minibatch_u = unlabeled_iter.next()
+                try:
+                    minibatch_x = labeled_iter.next()
+                except:
+                    if engine.distributed:
+                        train_labeled_sampler.set_epoch(epoch)
+                    labeled_iter = iter(train_labeled_loader)
+                    minibatch_x = labeled_iter.next()
+                try:
+                    minibatch_u = unlabeled_iter.next()
+                except:
+                    if engine.distributed:
+                        train_unlabeled_sampler.set_epoch(epoch)
+                    unlabeled_iter = iter(train_unlabeled_loader)
+                    minibatch_u = unlabeled_iter.next()
+                # minibatch_x = labeled_iter.next()
+                # minibatch_u = unlabeled_iter.next()
 
                 imgs_x = minibatch_x['data'].cuda(non_blocking=True)
                 gts_x = minibatch_x['label'].cuda(non_blocking=True)

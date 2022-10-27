@@ -7,6 +7,9 @@ import random
 # from config import config
 from utils.transforms import generate_random_crop_pos, random_crop_pad_to_shape, normalize
 
+import logging
+logger = logging.getLogger(__name__)
+
 def random_mirror(rgb, gt, modal_x):
     if random.random() >= 0.5:
         rgb = cv2.flip(rgb, 1)
@@ -25,6 +28,16 @@ def random_scale(rgb, gt, modal_x, scales):
 
     return rgb, gt, modal_x, scale
 
+def random_uniform_scale(rgb, gt, modal_x, scales):
+    scale = random.uniform(scales[0], scales[1])
+    sh = int(rgb.shape[0] * scale)
+    sw = int(rgb.shape[1] * scale)
+    rgb = cv2.resize(rgb, (sw, sh), interpolation=cv2.INTER_LINEAR)
+    gt = cv2.resize(gt, (sw, sh), interpolation=cv2.INTER_NEAREST)
+    modal_x = cv2.resize(modal_x, (sw, sh), interpolation=cv2.INTER_LINEAR)
+
+    return rgb, gt, modal_x, scale
+
 class TrainPreX(object):
     def __init__(self, config):
         self.config = config
@@ -34,7 +47,10 @@ class TrainPreX(object):
     def __call__(self, rgb, gt, modal_x):
         rgb, gt, modal_x = random_mirror(rgb, gt, modal_x)
         if self.config.train_scale_array is not None:
-            rgb, gt, modal_x, scale = random_scale(rgb, gt, modal_x, self.config.train_scale_array)
+            # rgb, gt, modal_x, scale = random_scale(rgb, gt, modal_x, self.config.train_scale_array)
+            rgb, gt, modal_x, scale = random_uniform_scale(rgb, gt, modal_x, self.config.train_scale_array)
+
+        # print (scale)
 
         rgb = normalize(rgb, self.norm_mean, self.norm_std)
         modal_x = normalize(modal_x, self.norm_mean, self.norm_std)
@@ -105,7 +121,8 @@ def get_train_loader(engine, dataset, config, batch_size):
                     
     train_preprocess = TrainPreX(config)
 
-    train_dataset = dataset(data_setting, "train", train_preprocess, config.batch_size * config.niters_per_epoch)
+    # train_dataset = dataset(data_setting, "train", train_preprocess, config.batch_size * config.niters_per_epoch)
+    train_dataset = dataset(data_setting, "train", train_preprocess)
 
     train_sampler = None
     is_shuffle = True
@@ -117,12 +134,13 @@ def get_train_loader(engine, dataset, config, batch_size):
         batch_size = config.batch_size // engine.world_size
         is_shuffle = False
 
+    logger.info("DATASET: {} Num of samples: {}".format(dataset, len(train_dataset)))
     train_loader = data.DataLoader(train_dataset,
                                    batch_size=batch_size,
                                    num_workers=config.num_workers,
                                    drop_last=True,
                                    shuffle=is_shuffle,
-                                   pin_memory=True,
+                                   pin_memory=False,
                                    sampler=train_sampler)
 
     return train_loader, train_sampler

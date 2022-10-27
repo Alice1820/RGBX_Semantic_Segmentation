@@ -309,6 +309,7 @@ class Evaluator(object):
             self.val_func.to(input_data.get_device())
             with torch.no_grad():
                 score = self.val_func(input_data)
+                score = score['logits']
                 score = score[0]
 
                 if self.is_flip:
@@ -425,6 +426,7 @@ class Evaluator(object):
             self.val_func.to(input_data.get_device())
             with torch.no_grad():
                 score = self.val_func(input_data, input_modal_x)
+                score = score['logits']
                 score = score[0]
                 if self.is_flip:
                     input_data = input_data.flip(-1)

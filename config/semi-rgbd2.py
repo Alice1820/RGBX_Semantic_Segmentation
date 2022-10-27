@@ -16,8 +16,8 @@ C.task = 'semi-rgbd2'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
 # C.data_dir = '/data0/xfzhang/data/NYUv2'
+C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
 C.save_path = os.path.join(C.data_dir, 'results', C.task)
 C.abs_dir = osp.realpath(".")
 
@@ -26,7 +26,10 @@ C.modals = 'RGBD'
 C.semi = True
 C.num_labeled = 300
 C.algo = 'multimatch'
-C.mu = 1
+C.mu = 2
+C.threshold = 0.95
+C.lambda_u = 1.0
+C.use_cr = True
 
 # Dataset config
 """Dataset Path"""
@@ -74,13 +77,17 @@ C.lr = 6e-5
 C.lr_power = 0.9
 C.momentum = 0.9
 C.weight_decay = 0.01
-C.batch_size = 1
+C.batch_size = 1 # only accept batch_size=1, on 2080Ti
 C.nepochs = 2000
-C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
-# C.niters_per_epoch = 100
+# C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
+# C.niters_per_epoch = 2048
+C.niters_per_epoch = 512
 C.num_workers = 16
-C.train_scale_array = [0.5, 0.75, 1, 1.25, 1.5, 1.75]
-C.warm_up_epoch = 10
+C.train_scale_array = [0.5, 1.75]
+# C.train_scale_array = [0.5, 0.62, 0.75, 1, 1.25, 1.5, 1.75]
+# C.train_scale_array = [0.5, 0.56, 0.68, 0.75]
+# C.warm_up_epoch = 10
+C.warm_up_epoch = 0
 
 C.fix_bias = True
 C.bn_eps = 1e-3

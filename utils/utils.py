@@ -53,3 +53,17 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+
+def meter_outputs(METERS, outputs):
+    for key, value in outputs.items():
+        if key != 'logits':
+            try:
+                METERS[key].update(value.item())
+            except:
+                METERS[key].update(value)
+
+def logger_outputs(METERS, tb, epoch):
+    for key, value in METERS.items():
+        if key != 'logits':
+            tb.add_scalar('train/{}'.format(key), value.avg, epoch)

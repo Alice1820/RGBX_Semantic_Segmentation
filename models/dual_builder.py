@@ -113,6 +113,7 @@ class RGBXEncoderDecoder(nn.Module):
         return out
 
     def forward(self, rgb, modal_x, label=None):
+        outputs = {}
         if self.aux_head:
             out, aux_fm = self.encode_decode(rgb, modal_x)
         else:
@@ -121,5 +122,6 @@ class RGBXEncoderDecoder(nn.Module):
             loss = self.criterion(out, label.long())
             if self.aux_head:
                 loss += self.aux_rate * self.criterion(aux_fm, label.long())
-            return loss
-        return out
+            outputs['loss'] = loss
+        outputs['logits'] = out
+        return outputs

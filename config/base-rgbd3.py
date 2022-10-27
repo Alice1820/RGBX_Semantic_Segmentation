@@ -12,19 +12,19 @@ cfg = C
 
 C.seed = 15
 
-C.task = 'base-rgbd'
+C.task = 'base-rgbd1'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
 # C.data_dir = '/data0/xfzhang/data/NYUv2'
+C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
 C.save_path = os.path.join(C.data_dir, 'results', C.task)
 C.abs_dir = osp.realpath(".")
 
 """Semi Learn"""
 C.modals = 'RGBD'
 C.semi = False
-C.num_labeled = None
+C.num_labeled = 100
 C.algo = 'supervised'
 
 # Dataset config
@@ -62,8 +62,8 @@ C.norm_mean = np.array([0.485, 0.456, 0.406])
 C.norm_std = np.array([0.229, 0.224, 0.225])
 
 """ Settings for network, this would be different for each kind of model"""
-C.backbone = 'mit_b2' # Remember change the path below.
-C.pretrained_model = C.root_dir + '/pretrained/segformer/mit_b2.pth'
+C.backbone = 'mit_b0' # Remember change the path below.
+C.pretrained_model = C.root_dir + '/pretrained/segformer/mit_b0.pth'
 C.decoder = 'MLPDecoder'
 C.decoder_embed_dim = 512
 C.optimizer = 'AdamW'

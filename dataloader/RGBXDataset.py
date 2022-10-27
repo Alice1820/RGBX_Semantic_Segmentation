@@ -149,44 +149,6 @@ class RGBX_X(RGBX_Base):
 
         # semi-supervised
         file_names = random_choices(file_names, self.num_labeled)
-
-        return file_names
-
-class RGBX_U(RGBX_Base):
-    def __init__(self, setting, split_name, preprocess=None, file_length=None):
-        super(RGBX_U, self).__init__(setting, split_name, preprocess=preprocess, file_length=file_length)
-
-    def __getitem__(self, index):
-        if self._file_length is not None:
-            item_name = self._construct_new_file_names(self._file_length)[index]
-        else:
-            item_name = self._file_names[index]
-        # print (item_name)
-        rgb_path = os.path.join(self._rgb_path, self.source, item_name + self._rgb_format)
-        x_path = os.path.join(self._x_path, self.source, item_name + self._x_format)
-        gt_path = os.path.join(self._gt_path, self.source, item_name + self._gt_format)
-        # print (gt_path)
-        # Check the following settings if necessary
-        rgb = self._open_image(rgb_path, cv2.COLOR_BGR2RGB)
-
-        gt = self._open_image(gt_path, cv2.IMREAD_GRAYSCALE, dtype=np.uint8)
-        if self._transform_gt:
-            gt = self._gt_transform(gt) 
-
-        if self._x_single_channel:
-            x = self._open_image(x_path, cv2.IMREAD_GRAYSCALE)
-            x = cv2.merge([x, x, x])
-        else:
-            x =  self._open_image(x_path, cv2.COLOR_BGR2RGB)
+        # print (len(file_names)) # 300
         
-        if self.preprocess is not None:
-            rgb_s, rgb_w, gt, x_s, x_w = self.preprocess(rgb, gt, x)
-
-        if self._split_name == 'train':
-            rgb = torch.from_numpy(np.ascontiguousarray(rgb)).float()
-            gt = torch.from_numpy(np.ascontiguousarray(gt)).long()
-            x = torch.from_numpy(np.ascontiguousarray(x)).float()
-
-        output_dict = dict(data=rgb, label=gt, modal_x=x, fn=str(item_name), n=len(self._file_names))
-
-        return output_dict
+        return file_names

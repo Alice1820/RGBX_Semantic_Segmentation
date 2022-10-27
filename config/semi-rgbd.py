@@ -16,16 +16,14 @@ C.task = 'base-rgbd'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
-# C.data_dir = '/data0/xfzhang/data/NYUv2'
-C.save_path = os.path.join(C.data_dir, 'results', C.task)
+C.data_dir = '/data0/xfzhang/data/NYUv2'
 C.abs_dir = osp.realpath(".")
 
 """Semi Learn"""
 C.modals = 'RGBD'
-C.semi = False
-C.num_labeled = None
-C.algo = 'supervised'
+C.semi = True
+C.num_labeled = 100
+C.algo = 'multimatch'
 
 # Dataset config
 """Dataset Path"""

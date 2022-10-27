@@ -13,7 +13,7 @@ from utils.visualize import print_iou, show_img
 from engine.evaluator import Evaluator
 from engine.logger import get_logger
 from utils.metric import hist_info, compute_score
-from dataloader.RGBXDataset import RGBX_X, RGBX_U, RGBX_Base
+from dataloader.RGBXDataset import RGBX_X, RGBX_Base
 from models.dual_builder import RGBXEncoderDecoder as dualsegmodel
 from models.builder import EncoderDecoder as segmodel
 from dataloader.dataloader import ValPre

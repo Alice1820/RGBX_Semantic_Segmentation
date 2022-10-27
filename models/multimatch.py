@@ -41,11 +41,11 @@ class rgbdFusMultiMatch(nn.Module):
     def forward(self, l, ab, gts=None, tb=None):
         l = l.contiguous().clone()
         ab = ab.contiguous().clone()
-        logits_l = self.l_to_ab(l)
-        logits_ab = self.ab_to_l(ab)
+        logits_l = self.l_to_ab(l)['logits']
+        logits_ab = self.ab_to_l(ab)['logits']
         # print (f_l.size())
         # print (f_ab.size())
-        logits_en = self.l_and_ab(l, ab) # late fusion
+        logits_en = self.l_and_ab(l, ab)['logits'] # late fusion
         # resolve logits
         batch_size = self.config.batch_size
         logits_l = de_interleave(logits_l, self.config.mu+1)
@@ -66,11 +66,10 @@ class rgbdFusMultiMatch(nn.Module):
         mask_l, mask_ab, thres_l, thres_ab, _, _, loss_lab_u = self.criterion_u(logits_l_u, logits_l_u, logits_ab_u, logits_ab_u)
         _, mask_en, _, thres_en, _, _, loss_len_u = self.criterion_u(logits_l_u, logits_l_u, logits_en_u, logits_en_u)
         _, _, _, _, _, _, loss_aben_u = self.criterion_u(logits_ab_u, logits_ab_u, logits_en_u, logits_en_u)
-        loss_x *= 0.33
 
         # unsupervised loss
-        loss_u = (loss_lab_u + loss_len_u + loss_aben_u) * 0.5
-        loss = loss_x + loss_u
+        loss_u = loss_lab_u + loss_len_u + loss_aben_u
+        loss = loss_x + loss_u * self.config.lambda_u
 
         if tb is not None:
             pass 
