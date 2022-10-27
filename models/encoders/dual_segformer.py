@@ -12,7 +12,6 @@ from engine.logger import get_logger
 
 logger = get_logger()
 
-
 class DWConv(nn.Module):
     """
     Depthwise convolution bloc: input: x with size(B N C); output size (B N C)

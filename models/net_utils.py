@@ -187,3 +187,11 @@ class FeatureFusionModule(nn.Module):
         merge = self.channel_emb(merge, H, W)
         
         return merge
+
+def net_statistics(model, logger):
+    from thop import profile
+    inputs = torch.randn(1, 3, 480, 640)
+    # gts = torch.zeros(1, 480, 640)
+    flops, params = profile(model, inputs=(inputs, ))
+    logger.info('FLOPs = ' + str(flops/1000**3) + 'G')
+    logger.info('Params = ' + str(params/1000**2) + 'M')

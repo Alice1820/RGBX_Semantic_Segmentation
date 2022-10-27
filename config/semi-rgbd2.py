@@ -30,7 +30,8 @@ C.mu = 2
 C.threshold = 0.95
 C.lambda_u = 1.0
 C.use_cr = False
-C.use_ema = True
+# C.use_ema = True
+C.use_ema = False
 
 # Dataset config
 """Dataset Path"""
@@ -51,7 +52,7 @@ C.train_source = "train"
 # C.eval_source = osp.join(C.dataset_path, "test.txt")
 C.eval_source = "test"
 C.is_test = False
-C.num_train_imgs = 795
+C.num_train_imgs = C.num_labeled
 C.num_eval_imgs = 654
 C.num_classes = 40
 C.class_names =  ['wall','floor','cabinet','bed','chair','sofa','table','door','window','bookshelf','picture','counter','blinds',
@@ -82,8 +83,9 @@ C.batch_size = 1 # only accept batch_size=1, on 2080Ti
 C.nepochs = 2000
 # C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
 # C.niters_per_epoch = 2048
-C.niters_per_epoch = 512
-C.num_workers = 16
+# C.niters_per_epoch = 512
+C.niters_per_epoch = 300
+C.num_workers = 4
 C.train_scale_array = [0.5, 1.75]
 # C.train_scale_array = [0.5, 0.62, 0.75, 1, 1.25, 1.5, 1.75]
 # C.train_scale_array = [0.5, 0.56, 0.68, 0.75]

@@ -3,6 +3,11 @@ from torch import nn
 from .dual_builder import RGBXEncoderDecoder as dualsegmodel
 from .builder import EncoderDecoder as segmodel
 from .criterion import FixMatchLoss, MultiMatchLoss
+from .net_utils import net_statistics
+
+from engine.logger import get_logger
+
+logger = get_logger()
 
 def interleave(x, size):
     s = list(x.shape)
@@ -32,11 +37,16 @@ class rgbdFusMultiMatch(nn.Module):
         super(rgbdFusMultiMatch, self).__init__()
 
         self.l_to_ab = segmodel(cfg=config, criterion=None, norm_layer=norm_layer, modals='RGB')
+        net_statistics(self.l_to_ab, logger)
         self.ab_to_l = segmodel(cfg=config, criterion=None, norm_layer=norm_layer, modals='Depth')
+        net_statistics(self.ab_to_l, logger)
         self.l_and_ab = dualsegmodel(cfg=config, criterion=None, norm_layer=norm_layer, modals='RGBD')
+        # net_statistics(self.l_and_ab, logger)
+
         self.config = config
-        self.criterion_x = nn.CrossEntropyLoss(reduction='mean', ignore_index=config.background)
+        self.criterion_x = nn.CrossEntropyLoss(reduction='mean', ignore_index=255)
         self.criterion_u = criterion
+
 
     def forward(self, l, ab, gts=None, tb=None):
         l = l.contiguous().clone()
