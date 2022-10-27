@@ -112,12 +112,15 @@ class Evaluator(object):
             3.eval all epochs in a given section: -e start_epoch-end_epoch
             4.eval all epochs from a certain started epoch: -e start_epoch-
             """
-        if self.config.modals == 'RGB':
-            self.val_func = model.l_to_ab
-        elif self.config.modals == 'Depth':
-            self.val_func = model.ab_to_l
-        elif self.config.modals == 'RGBD':
-            self.val_func = model.l_and_ab
+        if self.config.algo == 'supervised':
+            self.val_func = model
+        else:
+            if self.config.modals == 'RGB':
+                self.val_func = model.l_to_ab
+            elif self.config.modals == 'Depth':
+                self.val_func = model.ab_to_l
+            elif self.config.modals == 'RGBD':
+                self.val_func = model.l_and_ab
         # logger.info("Load Model: %s" % model)
         # self.val_func = load_model(self.network, model, is_restore=False)
         if len(self.devices ) == 1:

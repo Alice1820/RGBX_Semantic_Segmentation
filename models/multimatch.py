@@ -31,9 +31,9 @@ class rgbdFusMultiMatch(nn.Module):
     def __init__(self, config, criterion, norm_layer=None):
         super(rgbdFusMultiMatch, self).__init__()
 
-        self.l_to_ab = segmodel(cfg=config, criterion=None, norm_layer=norm_layer)
-        self.ab_to_l = segmodel(cfg=config, criterion=None, norm_layer=norm_layer)
-        self.l_and_ab = dualsegmodel(cfg=config, criterion=None, norm_layer=norm_layer)
+        self.l_to_ab = segmodel(cfg=config, criterion=None, norm_layer=norm_layer, modals='RGB')
+        self.ab_to_l = segmodel(cfg=config, criterion=None, norm_layer=norm_layer, modals='Depth')
+        self.l_and_ab = dualsegmodel(cfg=config, criterion=None, norm_layer=norm_layer, modals='RGBD')
         self.config = config
         self.criterion_x = nn.CrossEntropyLoss(reduction='mean', ignore_index=config.background)
         self.criterion_u = criterion
@@ -47,6 +47,7 @@ class rgbdFusMultiMatch(nn.Module):
         # print (f_ab.size())
         logits_en = self.l_and_ab(l, ab)['logits'] # late fusion
         # resolve logits
+        # print (logits_l.size())
         batch_size = self.config.batch_size
         logits_l = de_interleave(logits_l, self.config.mu+1)
         logits_l_x = logits_l[:batch_size]

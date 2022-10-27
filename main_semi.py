@@ -15,6 +15,7 @@ from torch.nn.parallel import DistributedDataParallel, DataParallel
 
 from dataloader.dataloader import get_train_loader
 from models.create_model import *
+from models.ema import ModelEMA
 
 from dataloader.RGBXDataset import RGBX_X, RGBX_Base
 from utils.init_func import init_weight, group_weight
@@ -125,7 +126,6 @@ if __name__ == '__main__':
             BatchNorm2d = nn.BatchNorm2d
         
         model = create_model(config=config, criterion=criterion, norm_layer=BatchNorm2d)
-
         # group weight and config optimizer
         base_lr = config.lr
         if engine.distributed:
@@ -155,7 +155,8 @@ if __name__ == '__main__':
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             model.to(device)
             # model = DataParallel(model)
-
+        if config.use_ema:
+            ema_model = ModelEMA(model)
         engine.register_state(dataloader=train_labeled_loader, model=model,
                             optimizer=optimizer)
         if engine.continue_state_object:
@@ -252,9 +253,11 @@ if __name__ == '__main__':
                 del loss
                 pbar.set_description(print_str, refresh=False)
             
-            if (engine.distributed and (engine.local_rank == 0)) or (not engine.distributed):
-                tb.add_scalar('train_loss', sum_loss / len(pbar), epoch)
-
+            # if (engine.distributed and (engine.local_rank == 0)) or (not engine.distributed):
+            #     tb.add_scalar('train_loss', sum_loss / len(pbar), epoch)
+            if config.use_ema:
+                ema_model.update(model)
+                test_model = ema_model.ema
             if (epoch >= config.checkpoint_start_epoch) and (epoch % config.checkpoint_step == 0) or (epoch == config.nepochs):
                 if engine.distributed and (engine.local_rank == 0):
                     engine.save_and_link_checkpoint(config.checkpoint_dir,
@@ -293,26 +296,26 @@ if __name__ == '__main__':
                 with torch.no_grad():
                     config.modals = 'RGB'
                     segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
-                                            config.norm_std, model.l_to_ab,
+                                            config.norm_std, test_model.l_to_ab,
                                             config.eval_scale_array, config.eval_flip,
                                             all_dev, args.verbose, config.save_path,
                                             args.show_image)
-                    segmentor.run_current(model, config.val_log_file,
+                    segmentor.run_current(test_model, config.val_log_file,
                                 config.link_val_log_file, tb, epoch)
                     config.modals = 'Depth'
                     segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
-                                            config.norm_std, model.ab_to_l,
+                                            config.norm_std, test_model.ab_to_l,
                                             config.eval_scale_array, config.eval_flip,
                                             all_dev, args.verbose, config.save_path,
                                             args.show_image)
-                    segmentor.run_current(model, config.val_log_file,
+                    segmentor.run_current(test_model, config.val_log_file,
                                 config.link_val_log_file, tb, epoch)
                     config.modals = 'RGBD'
                     segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
-                                            config.norm_std, model.l_and_ab,
+                                            config.norm_std, test_model.l_and_ab,
                                             config.eval_scale_array, config.eval_flip,
                                             all_dev, args.verbose, config.save_path,
                                             args.show_image)
-                    segmentor.run_current(model, config.val_log_file,
+                    segmentor.run_current(test_model, config.val_log_file,
                                 config.link_val_log_file, tb, epoch)
             logger_outputs(METERS, tb, epoch)

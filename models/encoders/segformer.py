@@ -359,8 +359,8 @@ def load_model(model, model_file):
         raw_state_dict = model_file
     
     # state_dict = {}
-    for k, v in raw_state_dict.items():
-        print (k)
+    # for k, v in raw_state_dict.items():
+        # print (k)
     #     if k.find('patch_embed') >= 0:
     #         state_dict[k] = v
     #         state_dict[k.replace('patch_embed', 'extra_patch_embed')] = v

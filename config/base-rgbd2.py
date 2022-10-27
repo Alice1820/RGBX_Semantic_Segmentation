@@ -16,8 +16,8 @@ C.task = 'base-rgbd2'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-# C.data_dir = '/data0/xfzhang/data/NYUv2'
-C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
+C.data_dir = '/data0/xfzhang/data/NYUv2'
+# C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
 C.save_path = os.path.join(C.data_dir, 'results', C.task)
 C.abs_dir = osp.realpath(".")
 
@@ -46,7 +46,8 @@ C.train_source = "train"
 # C.eval_source = osp.join(C.dataset_path, "test.txt")
 C.eval_source = "test"
 C.is_test = False
-C.num_train_imgs = 795
+# C.num_train_imgs = 795
+C.num_train_imgs = C.num_labeled
 C.num_eval_imgs = 654
 C.num_classes = 40
 C.class_names =  ['wall','floor','cabinet','bed','chair','sofa','table','door','window','bookshelf','picture','counter','blinds',
@@ -73,9 +74,9 @@ C.lr = 6e-5
 C.lr_power = 0.9
 C.momentum = 0.9
 C.weight_decay = 0.01
-C.batch_size = 2
+C.batch_size = 4
 C.nepochs = 2000
-C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
+C.niters_per_epoch = C.num_train_imgs // C.batch_size
 C.num_workers = 16
 C.train_scale_array = [0.5, 0.75, 1, 1.25, 1.5, 1.75]
 C.warm_up_epoch = 10
@@ -92,8 +93,8 @@ C.eval_flip = False # True #
 C.eval_crop_size = [480, 640] # [height weight]
 
 """Store Config"""
-C.checkpoint_start_epoch = 5
-C.checkpoint_step = 5
+C.checkpoint_start_epoch = 25
+C.checkpoint_step = 25
 
 """Path Config"""
 def add_path(path):

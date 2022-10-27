@@ -262,7 +262,7 @@ if __name__ == '__main__':
                 dataset = RGBX_Base(data_setting, 'val', val_pre)
                 with torch.no_grad():
                     segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
-                                            config.norm_std, model.l_to_ab,
+                                            config.norm_std, model,
                                             config.eval_scale_array, config.eval_flip,
                                             all_dev, args.verbose, config.save_path,
                                             args.show_image)

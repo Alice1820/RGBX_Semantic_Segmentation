@@ -16,8 +16,8 @@ C.task = 'semi-rgbd2'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-# C.data_dir = '/data0/xfzhang/data/NYUv2'
-C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
+C.data_dir = '/data0/xfzhang/data/NYUv2'
+# C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
 C.save_path = os.path.join(C.data_dir, 'results', C.task)
 C.abs_dir = osp.realpath(".")
 
@@ -29,7 +29,8 @@ C.algo = 'multimatch'
 C.mu = 2
 C.threshold = 0.95
 C.lambda_u = 1.0
-C.use_cr = True
+C.use_cr = False
+C.use_ema = True
 
 # Dataset config
 """Dataset Path"""
