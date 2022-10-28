@@ -16,8 +16,8 @@ C.task = 'base-rgbd-resize2'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-# C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
-C.data_dir = '/data0/xfzhang/data/NYUv2'
+C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
+# C.data_dir = '/data0/xfzhang/data/NYUv2'
 C.save_path = os.path.join(C.data_dir, 'results', C.task)
 C.abs_dir = osp.realpath(".")
 
@@ -97,8 +97,8 @@ C.eval_flip = False # True #
 C.eval_crop_size = [240, 320] # [height weight]
 
 """Store Config"""
-C.checkpoint_start_epoch = 5
-C.checkpoint_step = 5
+C.checkpoint_start_epoch = 25
+C.checkpoint_step = 25
 
 """Path Config"""
 def add_path(path):
