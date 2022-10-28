@@ -190,7 +190,8 @@ class FeatureFusionModule(nn.Module):
 
 def net_statistics(model, logger):
     from thop import profile
-    inputs = torch.randn(1, 3, 480, 640)
+    # inputs = torch.randn(1, 3, 480, 640)
+    inputs = torch.randn(1, 3, 240, 320)
     # gts = torch.zeros(1, 480, 640)
     flops, params = profile(model, inputs=(inputs, ))
     logger.info('FLOPs = ' + str(flops/1000**3) + 'G')

@@ -156,15 +156,13 @@ if __name__ == '__main__':
         logger.info('begin trainning:')
         
         for epoch in range(engine.state.epoch, config.nepochs+1):
-            METERS = {'loss': AverageMeter(), 'loss_x': AverageMeter(), 'loss_u': AverageMeter(), 
-            'mask_rgb': AverageMeter(), 'mask_dep': AverageMeter(), 'mask_en': AverageMeter(),
-            'thres_rgb': AverageMeter(), 'thres_dep': AverageMeter(), 'thres_en': AverageMeter()}
+            METERS = {'loss': AverageMeter(), 'loss_x': AverageMeter()}
             if engine.distributed:
                 train_sampler.set_epoch(epoch)
             bar_format = '{desc}[{elapsed}<{remaining},{rate_fmt}]'
             pbar = tqdm(range(config.niters_per_epoch), file=sys.stdout,
                         bar_format=bar_format)
-            dataloader = iter(train_loader)
+            dataloader = iter(train_loader) # dataloader is shuffled
 
             sum_loss = 0
 

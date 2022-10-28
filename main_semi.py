@@ -156,7 +156,7 @@ if __name__ == '__main__':
             model.to(device)
             # model = DataParallel(model)
         if config.use_ema:
-            ema_model = ModelEMA(model)
+            ema_model = ModelEMA(model=model, decay=config.ema_decay)
         engine.register_state(dataloader=train_labeled_loader, model=model,
                             optimizer=optimizer)
         if engine.continue_state_object:
@@ -258,6 +258,8 @@ if __name__ == '__main__':
             if config.use_ema:
                 ema_model.update(model)
                 test_model = ema_model.ema
+            else:
+                test_model = model
             if (epoch >= config.checkpoint_start_epoch) and (epoch % config.checkpoint_step == 0) or (epoch == config.nepochs):
                 if engine.distributed and (engine.local_rank == 0):
                     engine.save_and_link_checkpoint(config.checkpoint_dir,

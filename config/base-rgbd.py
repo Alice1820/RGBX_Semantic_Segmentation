@@ -16,8 +16,8 @@ C.task = 'base-rgbd'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
-# C.data_dir = '/data0/xfzhang/data/NYUv2'
+# C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
+C.data_dir = '/data0/xfzhang/data/NYUv2'
 C.save_path = os.path.join(C.data_dir, 'results', C.task)
 C.abs_dir = osp.realpath(".")
 
@@ -62,8 +62,8 @@ C.norm_mean = np.array([0.485, 0.456, 0.406])
 C.norm_std = np.array([0.229, 0.224, 0.225])
 
 """ Settings for network, this would be different for each kind of model"""
-C.backbone = 'mit_b2' # Remember change the path below.
-C.pretrained_model = C.root_dir + '/pretrained/segformer/mit_b2.pth'
+C.backbone = 'mit_b0' # Remember change the path below.
+C.pretrained_model = C.root_dir + '/pretrained/segformer/mit_b0.pth'
 C.decoder = 'MLPDecoder'
 C.decoder_embed_dim = 512
 C.optimizer = 'AdamW'
@@ -73,11 +73,12 @@ C.lr = 6e-5
 C.lr_power = 0.9
 C.momentum = 0.9
 C.weight_decay = 0.01
-C.batch_size = 2
+C.batch_size = 4
 C.nepochs = 2000
-C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
+C.niters_per_epoch = C.num_train_imgs // C.batch_size
 C.num_workers = 16
-C.train_scale_array = [0.5, 0.75, 1, 1.25, 1.5, 1.75]
+# C.train_scale_array = [0.5, 0.75, 1, 1.25, 1.5, 1.75]
+C.train_scale_array = [0.5, 1.75]
 C.warm_up_epoch = 10
 
 C.fix_bias = True

@@ -29,7 +29,8 @@ C.algo = 'multimatch'
 C.mu = 2
 C.threshold = 0.95
 C.lambda_u = 1.0
-C.use_cr = False
+# C.use_cr = False
+C.use_cr = True
 # C.use_ema = True
 C.use_ema = False
 
@@ -83,9 +84,9 @@ C.batch_size = 1 # only accept batch_size=1, on 2080Ti
 C.nepochs = 2000
 # C.niters_per_epoch = C.num_train_imgs // C.batch_size  + 1
 # C.niters_per_epoch = 2048
-# C.niters_per_epoch = 512
-C.niters_per_epoch = 300
-C.num_workers = 4
+C.niters_per_epoch = 512
+# C.niters_per_epoch = 300
+C.num_workers = 16
 C.train_scale_array = [0.5, 1.75]
 # C.train_scale_array = [0.5, 0.62, 0.75, 1, 1.25, 1.5, 1.75]
 # C.train_scale_array = [0.5, 0.56, 0.68, 0.75]
@@ -104,8 +105,8 @@ C.eval_flip = False # True #
 C.eval_crop_size = [480, 640] # [height weight]
 
 """Store Config"""
-C.checkpoint_start_epoch = 1
-C.checkpoint_step = 1
+C.checkpoint_start_epoch = 5
+C.checkpoint_step = 5
 
 """Path Config"""
 def add_path(path):

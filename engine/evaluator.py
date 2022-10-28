@@ -260,37 +260,36 @@ class Evaluator(object):
             score = score[:, margin[0]:(score.shape[1] - margin[1]),
                     margin[2]:(score.shape[2] - margin[3])]
         else:
-            stride = int(np.ceil(crop_size * stride_rate))
-            img_pad, margin = pad_image_to_shape(img, crop_size,
-                                                 cv2.BORDER_CONSTANT, value=0)
+            stride = (int(np.ceil(crop_size[0] * stride_rate)), int(np.ceil(crop_size[1] * stride_rate)))
+            img_pad, margin = pad_image_to_shape(img, crop_size, cv2.BORDER_CONSTANT, value=0)
+            # modal_x_pad, margin = pad_image_to_shape(modal_x, crop_size, cv2.BORDER_CONSTANT, value=0)
 
             pad_rows = img_pad.shape[0]
             pad_cols = img_pad.shape[1]
-            r_grid = int(np.ceil((pad_rows - crop_size) / stride)) + 1
-            c_grid = int(np.ceil((pad_cols - crop_size) / stride)) + 1
-            data_scale = torch.zeros(self.class_num, pad_rows, pad_cols).cuda(
-                device)
-            count_scale = torch.zeros(self.class_num, pad_rows, pad_cols).cuda(
-                device)
+            r_grid = int(np.ceil((pad_rows - crop_size[0]) / stride[0])) + 1
+            c_grid = int(np.ceil((pad_cols - crop_size[1]) / stride[1])) + 1
+            data_scale = torch.zeros(self.class_num, pad_rows, pad_cols).cuda(device)
 
-            for grid_yidx in range(r_grid):
-                for grid_xidx in range(c_grid):
-                    s_x = grid_xidx * stride
-                    s_y = grid_yidx * stride
-                    e_x = min(s_x + crop_size, pad_cols)
-                    e_y = min(s_y + crop_size, pad_rows)
-                    s_x = e_x - crop_size
-                    s_y = e_y - crop_size
+            for grid_yidx in range(c_grid):
+                for grid_xidx in range(r_grid):
+                    s_x = grid_xidx * stride[0]
+                    s_y = grid_yidx * stride[1]
+                    e_x = min(s_x + crop_size[0], pad_cols)
+                    e_y = min(s_y + crop_size[1], pad_rows)
+                    s_x = e_x - crop_size[0]
+                    s_y = e_y - crop_size[1]
                     img_sub = img_pad[s_y:e_y, s_x: e_x, :]
-                    count_scale[:, s_y: e_y, s_x: e_x] += 1
+                    # if len(modal_x_pad.shape) == 2:
+                    #     modal_x_sub = modal_x_pad[s_y:e_y, s_x: e_x]
+                    # else:
+                    #     modal_x_sub = modal_x_pad[s_y:e_y, s_x: e_x,:]
 
                     input_data, tmargin = self.process_image(img_sub, crop_size)
                     temp_score = self.val_func_process(input_data, device)
-                    temp_score = temp_score[:,
-                                 tmargin[0]:(temp_score.shape[1] - tmargin[1]),
-                                 tmargin[2]:(temp_score.shape[2] - tmargin[3])]
+                    
+                    temp_score = temp_score[:, tmargin[0]:(temp_score.shape[1] - tmargin[1]),
+                                            tmargin[2]:(temp_score.shape[2] - tmargin[3])]
                     data_scale[:, s_y: e_y, s_x: e_x] += temp_score
-            # score = data_scale / count_scale
             score = data_scale
             score = score[:, margin[0]:(score.shape[1] - margin[1]),
                     margin[2]:(score.shape[2] - margin[3])]
@@ -388,8 +387,8 @@ class Evaluator(object):
             c_grid = int(np.ceil((pad_cols - crop_size[1]) / stride[1])) + 1
             data_scale = torch.zeros(self.class_num, pad_rows, pad_cols).cuda(device)
 
-            for grid_yidx in range(r_grid):
-                for grid_xidx in range(c_grid):
+            for grid_yidx in range(c_grid):
+                for grid_xidx in range(r_grid):
                     s_x = grid_xidx * stride[0]
                     s_y = grid_yidx * stride[1]
                     e_x = min(s_x + crop_size[0], pad_cols)
