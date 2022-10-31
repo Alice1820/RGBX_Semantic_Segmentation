@@ -106,7 +106,7 @@ def add_path(path):
         sys.path.insert(0, path)
 add_path(osp.join(C.root_dir))
 
-C.log_dir = osp.abspath('log_' + C.dataset_name + '_' + C.backbone)
+C.log_dir = osp.abspath('log_' + C.task + '_' + C.dataset_name + '_N' + str(C.num_labeled) + '_' + C.backbone)
 C.tb_dir = osp.abspath(osp.join(C.log_dir, "tb"))
 C.log_dir_link = C.log_dir
 C.checkpoint_dir = osp.abspath(osp.join(C.log_dir, "checkpoint"))
