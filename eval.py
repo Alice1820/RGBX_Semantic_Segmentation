@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     # network = dualsegmodel(cfg=config, criterion=None, norm_layer=nn.BatchNorm2d)
     model = create_model(config=config, criterion=None, norm_layer=nn.BatchNorm2d)
-    tmp = torch.load(args.continue_fpath, map_location=torch.device('cpu'))
+    tmp = torch.load(args.continue_fpath, map_location=torch.device('cpu'))['model']
     load_model(model, tmp)
     logger.info("Loaded checkpoint from {}.".format(args.continue_fpath))
     test_model = model

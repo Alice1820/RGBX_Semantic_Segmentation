@@ -152,7 +152,7 @@ def load_restore_model(model, model_file):
 
     return model
 
-def load_model(model, model_file, sub_module='RGB', is_restore=False):
+def load_model(model, model_file, sub_module=None, is_restore=False):
     t_start = time.time()
 
     if model_file is None:
