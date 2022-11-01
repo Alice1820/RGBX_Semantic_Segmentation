@@ -1,3 +1,4 @@
+from json import load
 import os
 import cv2
 import argparse
@@ -16,7 +17,11 @@ from utils.metric import hist_info, compute_score
 from dataloader.RGBXDataset import RGBX_X, RGBX_Base
 from models.dual_builder import RGBXEncoderDecoder as dualsegmodel
 from models.builder import EncoderDecoder as segmodel
+from models.create_model import *
 from dataloader.dataloader import ValPre
+from utils.pyt_utils import all_reduce_tensor, extant_file, load_model
+from importlib import import_module
+
 
 logger = get_logger()
 
@@ -107,11 +112,26 @@ if __name__ == "__main__":
     parser.add_argument('--show_image', '-s', default=False,
                         action='store_true')
     parser.add_argument('--save_path', '-p', default='/data0/xfzhang/data/NYUv2/results/')
-
+    parser.add_argument('--config', type=str, default=None)
+    parser.add_argument('-c', '--continue', type=extant_file,
+                    metavar="FILE",
+                    dest="continue_fpath",
+                    help='continue from one certain checkpoint')
     args = parser.parse_args()
+    
+    config = import_module(args.config)
+    # print (config)
+    # from config import config
+    config = config.config
+
     all_dev = parse_devices(args.devices)
 
-    network = dualsegmodel(cfg=config, criterion=None, norm_layer=nn.BatchNorm2d)
+    # network = dualsegmodel(cfg=config, criterion=None, norm_layer=nn.BatchNorm2d)
+    model = create_model(config=config, criterion=None, norm_layer=nn.BatchNorm2d)
+    tmp = torch.load(args.continue_fpath, map_location=torch.device('cpu'))
+    load_model(model, tmp)
+    logger.info("Loaded checkpoint from {}.".format(args.continue_fpath))
+    test_model = model
     data_setting = {'rgb_root': config.rgb_root_folder,
                     'rgb_format': config.rgb_format,
                     'gt_root': config.gt_root_folder,
@@ -123,15 +143,42 @@ if __name__ == "__main__":
                     'class_names': config.class_names,
                     'train_source': config.train_source,
                     'eval_source': config.eval_source,
-                    'class_names': config.class_names}
+                    'class_names': config.class_names,
+                    'num_labeled': config.num_labeled,
+                    }
     val_pre = ValPre()
-    dataset = RGBXDataset(data_setting, 'val', val_pre)
- 
+    dataset = RGBX_Base(data_setting, 'val', val_pre)
     with torch.no_grad():
-        segmentor = SegEvaluator(dataset, config.num_classes, config.norm_mean,
-                                 config.norm_std, network,
-                                 config.eval_scale_array, config.eval_flip,
-                                 all_dev, args.verbose, args.save_path,
-                                 args.show_image)
-        segmentor.run(config.checkpoint_dir, args.epochs, config.val_log_file,
-                      config.link_val_log_file)
+        if config.modals == 'RGBD':
+            config.modals = 'RGB'
+            segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
+                                    config.norm_std, test_model.l_to_ab,
+                                    config.eval_scale_array, config.eval_flip,
+                                    all_dev, args.verbose, config.save_path,
+                                    args.show_image)
+            segmentor.run_current(test_model, config.val_log_file,
+                        config.link_val_log_file)
+            config.modals = 'Depth'
+            segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
+                                    config.norm_std, test_model.ab_to_l,
+                                    config.eval_scale_array, config.eval_flip,
+                                    all_dev, args.verbose, config.save_path,
+                                    args.show_image)
+            segmentor.run_current(test_model, config.val_log_file,
+                        config.link_val_log_file)
+            config.modals = 'RGBD'
+            segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
+                                    config.norm_std, test_model.l_and_ab,
+                                    config.eval_scale_array, config.eval_flip,
+                                    all_dev, args.verbose, config.save_path,
+                                    args.show_image)
+            segmentor.run_current(test_model, config.val_log_file,
+                        config.link_val_log_file)
+        else:
+            segmentor = RGBXSegEvaluator(config, dataset, config.num_classes, config.norm_mean,
+                                    config.norm_std, test_model,
+                                    config.eval_scale_array, config.eval_flip,
+                                    all_dev, args.verbose, config.save_path,
+                                    args.show_image)
+            segmentor.run_current(test_model, config.val_log_file,
+                        config.link_val_log_file)
