@@ -102,6 +102,8 @@ class RGBXSegEvaluator(Evaluator):
         iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc = compute_score(hist, correct, labeled)
         result_line = print_iou(iou, freq_IoU, mean_pixel_acc, pixel_acc,
                                 self.dataset.class_names, show_no_back=False)
+        # log_iou(iou, freq_IoU, mean_pixel_acc, pixel_acc,
+        #                         self.dataset.class_names, show_no_back=False)
         return iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line
 
 if __name__ == "__main__":
@@ -113,8 +115,9 @@ if __name__ == "__main__":
                         action='store_true')
     parser.add_argument('--save_path', '-p', default='/data0/xfzhang/data/NYUv2/results/')
     parser.add_argument('--config', type=str, default=None)
-    parser.add_argument('-c', '--continue', type=extant_file,
-                    metavar="FILE",
+    # parser.add_argument('--continue', type=extant_file,
+    parser.add_argument('--continue', type=str,
+                    # metavar="FILE",
                     dest="continue_fpath",
                     help='continue from one certain checkpoint')
     args = parser.parse_args()

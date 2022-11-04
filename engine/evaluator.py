@@ -11,9 +11,9 @@ import multiprocessing as mp
 from engine.logger import get_logger
 from utils.pyt_utils import load_model, link_file, ensure_dir
 from utils.transforms import pad_image_to_shape, normalize
+from scipy.io import savemat
 
 logger = get_logger()
-
 
 class Evaluator(object):
     def __init__(self, config, dataset, class_num, norm_mean, norm_std, network, multi_scales, 
@@ -40,6 +40,9 @@ class Evaluator(object):
             self.save_path = os.path.join(self.save_path, self.config.modals)
             ensure_dir(self.save_path)
         self.show_image = show_image
+
+    def log_iou(self, log_dir, iou):
+        savemat(os.path.join(log_dir, 'Iou_{}.mat'.format(self.config.modals)), {'iou': iou*100})
 
     def run(self, model_path, model_indice, log_file, log_file_link, tb=None, epoch=-1):
         """There are four evaluation modes:
@@ -128,6 +131,7 @@ class Evaluator(object):
         else:
             iou, mean_IoU, _, freq_IoU, mean_pixel_acc, pixel_acc, result_line = self.multi_process_evaluation()
         
+        self.log_iou(self.save_path, iou)
         results = open(log_file, 'a')
         link_file(log_file, log_file_link)
 

@@ -16,15 +16,15 @@ C.task = 'base-rgb-resize'
 
 remoteip = os.popen('pwd').read()
 C.root_dir = os.path.abspath(os.path.join(os.getcwd(), './'))
-C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
-# C.data_dir = '/data0/xfzhang/data/NYUv2'
+# C.data_dir = '/mnt/hdd/xifan/data/nyuv2-python-toolkit/NYUv2'
+C.data_dir = '/data0/xfzhang/data/NYUv2'
 C.save_path = os.path.join(C.data_dir, 'results', C.task)
 C.abs_dir = osp.realpath(".")
 
 """Semi Learn"""
 C.modals = 'RGB'
 C.semi = False
-C.num_labeled = None
+C.num_labeled = 795
 C.algo = 'supervised'
 
 # Dataset config
@@ -93,8 +93,8 @@ C.eval_iter = 5
 C.eval_stride_rate = 2 / 3
 C.eval_scale_array = [1] # [0.75, 1, 1.25] # 
 C.eval_flip = False # True # 
-# C.eval_crop_size = [480, 640] # [height weight]
-C.eval_crop_size = [240, 320] # [height weight]
+C.eval_crop_size = [480, 640] # [height weight]
+# C.eval_crop_size = [240, 320] # [height weight]
 
 """Store Config"""
 C.checkpoint_start_epoch = 25
@@ -106,7 +106,8 @@ def add_path(path):
         sys.path.insert(0, path)
 add_path(osp.join(C.root_dir))
 
-C.log_dir = osp.abspath('log_' + C.dataset_name + '_' + C.backbone)
+# C.log_dir = osp.abspath('log_' + C.dataset_name + '_' + C.backbone)
+C.log_dir = osp.abspath('log_' + C.task + '_' + C.dataset_name + '_N' + str(C.num_labeled) + '_' + C.backbone)
 C.tb_dir = osp.abspath(osp.join(C.log_dir, "tb"))
 C.log_dir_link = C.log_dir
 C.checkpoint_dir = osp.abspath(osp.join(C.log_dir, "checkpoint"))
